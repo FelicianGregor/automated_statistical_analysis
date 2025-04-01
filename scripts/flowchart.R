@@ -1,6 +1,6 @@
 #install.packages("DiagrammeR")
-install.packages("rsvg")
-install.packages("DiagrammeRsvg")
+#install.packages("rsvg")
+#install.packages("DiagrammeRsvg")
 library(rsvg)
 library(DiagrammeR)
 library(DiagrammeRsvg)
@@ -68,6 +68,7 @@ digraph decision_tree {
 }
 ")
 
+###### version with test data box top right hand corner
 
 grViz("
 digraph decision_tree {
