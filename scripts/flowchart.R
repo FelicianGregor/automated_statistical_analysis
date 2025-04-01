@@ -5,6 +5,8 @@ library(rsvg)
 library(DiagrammeR)
 library(DiagrammeRsvg)
 
+#create a flowchart of the planned bachelor thesis project, depicting the main stages of the system
+
 ### without test data on data box
 flowchart = grViz("
 digraph decision_tree {
