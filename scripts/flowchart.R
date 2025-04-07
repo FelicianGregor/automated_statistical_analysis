@@ -129,3 +129,31 @@ digraph decision_tree {
 }
 ")
 
+#####flowchart version for hypothesis testing####
+
+grViz("
+digraph flowchart {
+  rankdir=TB; // Top-to-bottom layout
+
+  node [shape=box, style=filled, fillcolor=white]
+
+  Start     [label='input: ']
+  Step1     [label='Step 1: Collect Data']
+  Step2     [label='Step 2: Clean Data']
+  Step3     [label='Step 3: Analyze Data']
+  Decision  [label='Step 4: Model Accurate?', shape=box, fillcolor=lightgray]
+  End       [label='End']
+
+  // Define connections
+  Start -> Step1
+  Step1 -> Step2
+  Step2 -> Step3
+  Step3 -> Decision
+  Decision -> Step1 [label='No', color=red]
+  Decision -> End [label='Yes', color=green]
+}
+")
+
+
+#####flowchart version for prediction####
+#####flowchart version for data exploration####
