@@ -24,7 +24,8 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
 
   #store other input information
   list$mode = mode
-  list$dist = dist
+  list$dist = dist 
+  #currently restricted to distributions supported by glm(): ?family
   
   #data checking
   list$data_na.omit = na.omit(list$raw_data) #delete all rows with NA values
@@ -36,9 +37,9 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   if (mode == "test"){
     
     #model fit, based on specified hypothesis
-    list$model = glm(formula, data = list$data_na.omit, list$dist) #attention: is just a lm, always assuming normally distributed data!
+    list$model = glm(formula, data = list$data_na.omit, family = list$dist)
     #store model summary: result
-    list$model_summary = summary(model)
+    list$model_summary = summary(list$model)
     cat("model fitted!\n")
     list$model_significance = list$model_summary$coefficients[2,"Pr(>|t|)"]
     list$model_text = ifelse(list$model_significance<0.05, 
@@ -94,8 +95,13 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     #### plotting####
     #define plot function that creates scatter plot and adds a simple abline (although not being the most elegant way)
     list$plotting_plot_function = function(){
-      plot(formula, data = list$raw_data, las = 1)
-      #abline(list$model, lwd = 2, col = "purple")
+      if (max(grep("numeric", attr(list$model_summary$terms, "dataClasses")))>0){
+        mosaic::plotModel(formula, data = list$list$data_na.omit)+theme_minimal()
+      } else{
+        plot(formula, data = list$data_na.omit, las = 1)
+        #abline(list$model, lwd = 2, col = "purple")
+      }
+      
     }
     list$plotting_plot_function()
     cat("plot done\n")
@@ -124,7 +130,6 @@ head(knz_bison) # I'm interested in the relationship of age and weight in pounds
 #compute rough age of Bisons (I just have the birth and date when their weight was measured)
 knz_bison$age = (knz_bison$rec_year - knz_bison$animal_yob) + (30*(knz_bison$rec_month)+knz_bison$rec_day)/365
 
-#initial plot
 plot(animal_weight~age, data = knz_bison, las = 1, 
      main = "relation of bisons age and weight", 
      xlab = "age [years]", 
@@ -133,7 +138,11 @@ plot(animal_weight~age, data = knz_bison, las = 1,
 #i don't differentiate between sex here... --> (i specify a bad model)
 
 ### test function
-results = system_function(animal_weight~age + animal_sex, data = knz_bison, mode = "test", dist = "gaussian")
-
+results = system_function(animal_weight~age+animal_sex+animal_sex:age, data = knz_bison, mode = "test", dist = "gaussian")
+knz_bison$animal_weight
 #well, there is a certain relationship, but the model diagnostics don't really look great
 
+
+mod = glm(animal_weight~age+animal_sex+animal_sex:age, data = knz_bison)
+formula(mod)
+all.vars(formula(mod))
