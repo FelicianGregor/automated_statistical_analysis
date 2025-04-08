@@ -3,12 +3,26 @@
 # store everything in a long list
 # do one branch for prediction, one branch for hyp. testing and one branch for data exploration
 
-system_function = function(x, y, mode, dist = "gaussian"){
+# - include possibility for multivariate models - DONE
+# - reporting with quarto document
+# - include other families as well --> works with all glm families (distribution)
+# - effect size!
+# - include possibility to give formula - DONE
+
+
+system_function = function(formula,  data, mode, dist = "gaussian"){
   
-  #write data to data.frame
-  data = data.frame("x" = x, "y"=y)
-  #create long storage list 
-  list = list("raw_data" = data) #store raw data
+  #create the long storage list
+  list = list()
+  
+  #get data from formula
+  list$data_variables = all.vars(formula)
+  list$raw_data = data[list$data_variables] # subset data to just data that was used
+  
+  #store all the other variables as well
+  list$data_all_including_unused = data
+
+  #store other input information
   list$mode = mode
   list$dist = dist
   
@@ -22,7 +36,7 @@ system_function = function(x, y, mode, dist = "gaussian"){
   if (mode == "test"){
     
     #model fit, based on specified hypothesis
-    list$model = glm(y~x, data = list$data_na.omit, list$dist) #attention: is just a lm, always assuming normally distributed data!
+    list$model = glm(formula, data = list$data_na.omit, list$dist) #attention: is just a lm, always assuming normally distributed data!
     #store model summary: result
     list$model_summary = summary(model)
     cat("model fitted!\n")
@@ -80,8 +94,8 @@ system_function = function(x, y, mode, dist = "gaussian"){
     #### plotting####
     #define plot function that creates scatter plot and adds a simple abline (although not being the most elegant way)
     list$plotting_plot_function = function(){
-      plot(y~x, data = list$raw_data, las = 1)
-      abline(list$model, lwd = 2, col = "purple")
+      plot(formula, data = list$raw_data, las = 1)
+      #abline(list$model, lwd = 2, col = "purple")
     }
     list$plotting_plot_function()
     cat("plot done\n")
@@ -119,5 +133,7 @@ plot(animal_weight~age, data = knz_bison, las = 1,
 #i don't differentiate between sex here... --> (i specify a bad model)
 
 ### test function
-system_function(x = knz_bison$age, y = knz_bison$animal_weight, mode = "test", dist = "gaussian")
+results = system_function(animal_weight~age + animal_sex, data = knz_bison, mode = "test", dist = "gaussian")
+
 #well, there is a certain relationship, but the model diagnostics don't really look great
+
