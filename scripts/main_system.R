@@ -94,16 +94,21 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
     #### plotting####
     #define plot function that creates scatter plot and adds a simple abline (although not being the most elegant way)
-    list$plotting_plot_function = function(){
-      if (max(grep("numeric", attr(list$model_summary$terms, "dataClasses")))>0){
-        mosaic::plotModel(formula, data = list$list$data_na.omit)+theme_minimal()
-      } else{
+    
+    if (any(grep("numeric", attr(list$model_summary$terms, "dataClasses")))>0){
+      #ggpredict(list$model, terms = list$model$terms) %>% plot()
+      list$plotting_function = function(){
+        plot(formula, data = list$data_na.omit, las = 1)
+        abline(list$model, col = "purple", las = 2)
+      }
+    } else{
+      list$plotting_function = function(){
         plot(formula, data = list$data_na.omit, las = 1)
         #abline(list$model, lwd = 2, col = "purple")
       }
       
     }
-    list$plotting_plot_function()
+    list$plotting_function()
     cat("plot done\n")
     
   }
@@ -138,11 +143,6 @@ plot(animal_weight~age, data = knz_bison, las = 1,
 #i don't differentiate between sex here... --> (i specify a bad model)
 
 ### test function
-results = system_function(animal_weight~age+animal_sex+animal_sex:age, data = knz_bison, mode = "test", dist = "gaussian")
+results = system_function(animal_weight~age, data = knz_bison, mode = "test", dist = "gaussian")
 knz_bison$animal_weight
 #well, there is a certain relationship, but the model diagnostics don't really look great
-
-
-mod = glm(animal_weight~age+animal_sex+animal_sex:age, data = knz_bison)
-formula(mod)
-all.vars(formula(mod))
