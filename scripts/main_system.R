@@ -6,7 +6,7 @@
 # - include possibility for multivariate models - DONE
 # - reporting with quarto document
 # - include other families as well --> works with all glm families (distribution)
-# - effect size!
+# - effect sizes!
 # - include possibility to give formula - DONE
 
 
@@ -14,6 +14,29 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   
   #create the long storage list
   list = list()
+  
+  #create quarto document for reporting
+  cat(sprintf(
+'---
+title: "report automated statistical analysis"
+format: html
+editor: visual
+---
+
+## input'), file = './output/reports/test.qmd')
+  
+  cat(sprintf('
+## plot
+Here, lets add some code and a simple plot:
+```{r}
+sample = rnorm(100, mean = 6, sd = 2)
+plot(seq(1:100), sample, main = "plot", las = 1, col = "red", pch = 16)
+lm1 = lm(sample~seq(1:100))
+abline(lm1, col = "purple", lwd = 2)
+```
+'), file = './output/reports/test.qmd', 
+      append = TRUE)
+
   
   #get data from formula
   list$data_variables = all.vars(formula)
@@ -49,7 +72,6 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
     
     #### model diagnostics####
-    
     #### prep-simulations for DHARMa diagnostics
     list$diagn_DHARMa_sim = DHARMa::simulateResiduals(list$model, n = 1000)
     cat("simulating DHARMa residuals finished\n")
@@ -111,6 +133,10 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     list$plotting_function()
     cat("plot done\n")
     
+    ####reporting####
+    #render the reporting document:
+    quarto::quarto_render('./output/reports/test.qmd')
+    
   }
   if (mode == "predict"){
     
@@ -140,9 +166,7 @@ plot(animal_weight~age, data = knz_bison, las = 1,
      xlab = "age [years]", 
      ylab = "weight [pounds]")
 
-#i don't differentiate between sex here... --> (i specify a bad model)
-
 ### test function
 results = system_function(animal_weight~age, data = knz_bison, mode = "test", dist = "gaussian")
-knz_bison$animal_weight
+
 #well, there is a certain relationship, but the model diagnostics don't really look great

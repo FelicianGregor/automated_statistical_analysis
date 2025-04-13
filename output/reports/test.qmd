@@ -1,0 +1,15 @@
+---
+title: "report automated statistical analysis"
+format: html
+editor: visual
+---
+
+## input
+## plot
+Here, lets add some code and a simple plot:
+```{r}
+sample = rnorm(100, mean = 6, sd = 2)
+plot(seq(1:100), sample, main = "plot", las = 1, col = "red", pch = 16)
+lm1 = lm(sample~seq(1:100))
+abline(lm1, col = "purple", lwd = 2)
+```
