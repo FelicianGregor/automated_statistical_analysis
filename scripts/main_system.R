@@ -15,29 +15,6 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   #create the long storage list
   list = list()
   
-  #create quarto document for reporting
-  cat(sprintf(
-'---
-title: "report automated statistical analysis"
-format: html
-editor: visual
----
-
-## input'), file = './output/reports/test.qmd')
-  
-  cat(sprintf('
-## plot
-Here, lets add some code and a simple plot:
-```{r}
-sample = rnorm(100, mean = 6, sd = 2)
-plot(seq(1:100), sample, main = "plot", las = 1, col = "red", pch = 16)
-lm1 = lm(sample~seq(1:100))
-abline(lm1, col = "purple", lwd = 2)
-```
-'), file = './output/reports/test.qmd', 
-      append = TRUE)
-
-  
   #get data from formula
   list$data_variables = all.vars(formula)
   list$raw_data = data[list$data_variables] # subset data to just data that was used
@@ -132,10 +109,7 @@ abline(lm1, col = "purple", lwd = 2)
     }
     list$plotting_function()
     cat("plot done\n")
-    
-    ####reporting####
-    #render the reporting document:
-    quarto::quarto_render('./output/reports/test.qmd')
+  
     
   }
   if (mode == "predict"){
@@ -146,6 +120,49 @@ abline(lm1, col = "purple", lwd = 2)
   }
   
   ##### reporting ####
+  #create a long list params for quarto document
+  params_report = list()
+  params_report$mode = mode
+  params_report$dist = dist
+  params_report$p.value = list$model_summary$coefficients[2,"Pr(>|t|)"]
+  
+  #create quarto document for reporting
+  cat(sprintf(
+    '---
+title: "report automated statistical analysis"
+format: html
+editor: visual
+params:
+  dist: "gaussian"
+  p.value: 0.03
+  mode: "test"
+---
+
+## input
+
+Done! The automated statistician performed your analysis!
+
+You did a `r params$mode`, assuming the following distribution:
+
+a `r params$dist` distribution.
+
+## result
+
+The p-value of `r params$p.value` indicates that your H0 can be rejected and thus, your Ha is assumed to hold
+
+A plot of the data is looking this way:
+
+```{r}
+plot(seq(1:10), seq(1:10), main = "plot", las = 1, col = "red")
+```
+
+\
+'), file = './output/reports/test.qmd')
+  
+  #render the reporting document:
+  quarto::quarto_render('./output/reports/test.qmd', 
+                        execute_params = params_report)
+  
   
   #return list
   return(list)
