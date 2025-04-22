@@ -4,8 +4,8 @@
 # do one branch for prediction, one branch for hyp. testing and one branch for data exploration
 
 # - 2 effect sizes! / or better short introduction how to read the summary(glm)-output? 
-# - 3 add plots!
-# - 1 make DHARMa stuff better!
+# - 3 add effects in plots (lots of work in case i need to write the code by myself...)
+# - 1 make DHARMa stuff better! 
 # - 4 include automatic model adjustment just with deleted cooks D values?
 
 
@@ -47,11 +47,11 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     #store model summary: result
     list$model_summary = summary(list$model)
     cat("model fitted!\n")
-    list$model_significance = list$model_summary$coefficients[2,"Pr(>|t|)"]
-    list$model_text = ifelse(list$model_significance<0.05, 
-                             "significant effect detected\n", 
-                             "no significant effect detected\n")
-    cat(list$model_text)
+    list$model_significance = list$model_summary$coefficients[,"Pr(>|t|)"]
+    list$model_text = "If the p-value is smaller than 0.05 (denoted with *, ** or ***) this indicates 
+                      that your null hypothesis (H0) can be rejected and thus, your (alternative) 
+                      Hypothesis (H1 / Ha) is assumed to hold until more data becomes available and 
+                      could reject the null hypothesis."
     
     #check quickly if there are enough data points for the number of predictor variables:
     #Dormann criterion: 5-10 data points per independent variable
@@ -102,7 +102,6 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
                                               " distribution, ", "the dispersion parameter as residual deviance is estimated from data to be ", 
                                               list$model_summary$dispersion, ".")
     }
-    print(list$diagn_dispersion_text)
     
     ## follow Dormann 2017 for criterion on over/under dispersion
     
@@ -174,21 +173,25 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
     #### plotting####
     #define plot function that creates scatter plot and adds a simple abline (although not being the most elegant way)
+    # attention! plotting is done on the link scale! (in case distribution is "gaussian" or "Gamma" ,link scale = response scale)
     
-    if (any(grep("numeric", attr(list$model_summary$terms, "dataClasses")))>0){
-      # attention! plotting ois done on the link scale! (in case "gaussian" ,link scale = response scale)
-      list$plotting_function = function(){
-        #plot(formula, data = list$data_na.omit, las = 1)
-        #abline(list$model, col = "purple", las = 2)
-      }
+    #start the "recording" using png (before setting the par)
+    png('./output/plots/plot.png', width = 8, units = "in", height = 5, res = 300)
+    
+    #set par(mfrow = c()) to 2 cols and right number of rows depending on data
+    list$plot_rows_needed = ceiling(((ncol(list$model$model)-1)/2))
+    if ((ncol(list$model$model)-1) < 1){
+      par(mfrow = c(1,1))
     } else{
-      list$plotting_function = function(){
-        #plot(formula, data = list$data_na.omit, las = 1)
-        #abline(list$model, lwd = 2, col = "purple")
-      }
-      
+      par(mfrow = c(list$plot_rows_needed, 2))
+      par(mar = c(4.5, 4, 0.5, 0.5))
+      par(tcl = 0.5) # axis ticks inside the window
+      par(mgp = c(2.5, 0.5, 0)) # move axis title etc. closer
+      par(las = 1) #turn ticks
     }
-    list$plotting_function()
+    plot(formula, data = data, las = 1, ask = F, cex = 0.7)
+    dev.off()
+    par(mfrow = c(1, 1), mar = c(5, 4, 4, 2)) # set par() back
     cat("plot done\n")
   
     
@@ -214,7 +217,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   params_report$number_data_points_per_var_text = list$number_data_points_per_var_text
     
   # model fitting:
-  params_report$p.value = list$model_summary$coefficients[2,"Pr(>|t|)"]
+  params_report$model_significance = capture.output(list$model_significance)
   params_report$summary = capture.output(summary(list$model))
   
   # model diagnostics
@@ -240,6 +243,7 @@ params:
   diagn_dispersion_conclusion: "conclusion"
   diagn_cooks_result: "result"
   number_data_points_per_var_text: "this text was not displayed correctly"
+  model_significance: "significance"
 ---
 
 ## input for `r params$mode`
@@ -256,18 +260,27 @@ We detected `r params$na_omitted_number` NA values that were deleted.
 
 
 ## result of `r params$mode`
+Here, the significance values (p-values) for each independent variable are printed:
+```{r}
+#| echo: false
+cat(params$model_significance, sep = "\n")
 
-The p-value of `r params$p.value` indicates that your H0 can be rejected and thus, your Ha is assumed to hold until more data becomes available and rejects the hypothesis.
-In the section below, please find the summary of the model you fitted:
+```
+If the p-value of the variable is smaller than 0.05 (denoted with one to three "*" in the model summary below) this indicates that the null hypothesis (H0) can be rejected and thus, your alternative hypothesis (H1 / Ha) is assumed to hold until more data becomes available and could reject the null hypothesis.
+Below, the full model summary is shown for further details:
 
 ```{r}
 #| echo: false
 cat(params$summary, sep = "\n")
 
 ```
+Please have a look at the plots. Note: Interaction terms (denoted as predictor1:predictor2 in the formula) can not be displayed.
+
+![Plot of all independent variables and the response variable](../plots/plot.png){width=70% fig-align="center"}
+
 ## model diagnostics
 Please check the model doagnostics carefully to make sure the inferences made are valid!
-For model diagnostics, we use a "conventional" approach and simulation based approach for scaled (quantile) residuals from the `DHARMa`-package that side by side. The latter scaled quantile residuals can be interpreted intuitively in the same way as residuals from linear regression models. For more information please read [the introduction by Florian Hartig](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html).
+For model diagnostics, we use a "conventional" approach and simulation based approach for scaled (quantile) residuals from the `DHARMa`-package side by side. The latter scaled quantile residuals can be interpreted intuitively in the same way as residuals from linear regression models. For more information please read [the introduction by Florian Hartig](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html).
 
 ### conventional model diagnostics
 `r params$diagn_dispersion_text`
@@ -309,16 +322,16 @@ data("hbr_maples")
 #inspect briefly
 head(hbr_maples) # I'm interested in the relationship of watershed (treatment with calcium or not) and stem_dry_mass (representing productivity)
 summary(hbr_maples)
-# also, elevation could have a strong influence on growth
-# stem_dry_mass ~ watershed + elevation
+# also, elevation could have a strong influence on growth, so include the variable and possible interactions
+# assumed relation: stem_dry_mass ~ watershed + elevation
 # stem_dry_mass: continuous
-# watershed: treated (W1), not treated reference (Reference)
-# elevation: Low and Mid as categories 
+# watershed: categorical: treated (W1), not treated reference (Reference)
+# year: numeric
+# elevation: Low and Mid as levels 
 
 #test the function
-test = system_function(stem_dry_mass ~ watershed * elevation, data = hbr_maples, mode = "test", dist = "gaussian")
-# there is definitely a plot missing!
-# good reporting of DHARMa results!
+test = system_function(stem_dry_mass ~ watershed * as.factor(year), data = hbr_maples, mode = "test", dist = "gaussian")
+# better reporting of DHARMa results!
 # explanation of the model summary printed
-# take out the Hypothesis stuff!
-plot(stem_dry_mass ~ watershed * elevation, data = hbr_maples)
+plot(stem_dry_mass ~ watershed* leaf2area, data = hbr_maples, las = 1, alpha = 0.8, ask = F)
+
