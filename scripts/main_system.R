@@ -3,9 +3,10 @@
 # store everything in a long list
 # do one branch for prediction, one branch for hyp. testing and one branch for data exploration
 
-# - effect sizes!
-# - add a plot!
-# - make DHARMa stuff better!
+# - 2 effect sizes! / or better short introduction how to read the summary(glm)-output? 
+# - 3 add plots!
+# - 1 make DHARMa stuff better!
+# - 4 include automatic model adjustment just with deleted cooks D values?
 
 
 #packages used
@@ -34,7 +35,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   list$data_na.omit = na.omit(list$raw_data) #delete all rows with NA values
   list$data_na.omitted_number = length(list$raw_data) - length(list$data_na.omit)
   list$data_na.omitted_number_text = paste(list$data_na.omitted_number, "NA's omitted\n")
-  cat(list$data_na.omitted_number_text) # print out to console :D
+  cat(list$data_na.omitted_number_text) # print out to console
   
   #check the mode and enter the hypothesis test mode if mode = "test" == TRUE
   if (mode == "test"){
@@ -52,6 +53,26 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
                              "no significant effect detected\n")
     cat(list$model_text)
     
+    #check quickly if there are enough data points for the number of predictor variables:
+    #Dormann criterion: 5-10 data points per independent variable
+    list$number_data_points_per_var = nrow(list$data_na.omit)/(ncol(list$model$model)-1)
+    if(list$number_data_points_per_var<5){
+      list$number_data_points_per_var_text = paste("You have only ", list$number_data_points_per_var, 
+                                                   " data points per independent variable in your model. 
+                                                   This less than 5 - 10 data points per variable and can 
+                                                   cause strong overfitting. Please either simplify the model 
+                                                   by removing independent variables or collect more data.")
+    }
+    if(list$number_data_points_per_var<=10){
+      list$number_data_points_per_var_text = paste("You have only ", list$number_data_points_per_var, 
+                                                   " data points per independent variable in your model. 
+                                                   This less than  10 data points per variable and can 
+                                                   cause overfitting. Please either simplify the model 
+                                                   by removing independent variables or collect more data.")
+    }else{
+      list$number_data_points_per_var_text = paste("Your model contains ", list$number_data_points_per_var,  " data points per independent variable which is sufficient for your model.")
+    }
+    
     #effect sizes: Is the effect actually large?
     #following Nakagawa and Cuthill 2007 (review article on effect sizes): report slope and CI, as well as r statistics (correlations, partial corerelations)
     # pay attention to link and response scale: backtransform
@@ -65,13 +86,15 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
     
     
+    
+    
     #### model diagnostics####
     #normal model diagnostics:
     
     #compute dispersion in case the dispersion is taken to be one and not estimated from data (as for gaussian, Gamma)
     # follow Dormann 2017: dispersion = residual deviance / residual degrees of freedom
     if (list$model_summary$dispersion==1){
-      list$diagn_dispersion_value = (list$model_summary$deviance) / (list$model_summary$df.residual)
+      list$diagn_dispersion_value = round((list$model_summary$deviance) / (list$model_summary$df.residual), 2)
       list$diagn_dispersion_text = paste("The dispersion value (defined as residual deviance devided by residual degrees of freedom) is", 
                                                list$diagn_dispersion_value, ".")
     } else{
@@ -188,6 +211,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   
   # data checking:
   params_report$na_omitted_number = list$data_na.omitted_number
+  params_report$number_data_points_per_var_text = list$number_data_points_per_var_text
     
   # model fitting:
   params_report$p.value = list$model_summary$coefficients[2,"Pr(>|t|)"]
@@ -215,6 +239,7 @@ params:
   diagn_dispersion_text: "text"
   diagn_dispersion_conclusion: "conclusion"
   diagn_cooks_result: "result"
+  number_data_points_per_var_text: "this text was not displayed correctly"
 ---
 
 ## input for `r params$mode`
@@ -227,6 +252,8 @@ Please be aware that you chose the mode "`r params$mode`" of the automated stati
 
 ## data preparation
 We detected `r params$na_omitted_number` NA values that were deleted.
+`r params$number_data_points_per_var_text`
+
 
 ## result of `r params$mode`
 
@@ -256,7 +283,7 @@ The DHARMa outlier test:
 The DHARMa dispersion test:
 ![DHARMa dispersion test](../plots/diagnostics_DHARMa_dispersion.png){width=70% fig-align="center"}
 
-The DHARMa uniformity test compares the distribution of the modeled/expected residuals(simulated from the fitted model) with a uniform distribution using a KS test (two sided as default) and returns a p value. If the p value is smaller than 0.05, the distribution of the simulated data significantly different from the the expected uniformal distribution.
+The DHARMa uniformity test compares the distribution of the modeled/expected residuals (simulated from the fitted model) with a uniform distribution using a KS test (two sided as default) and returns a p value. If the p value is smaller than 0.05, the distribution of the simulated data significantly different from the the expected uniformal distribution.
 ![DHARMa uniformity test](../plots/diagnostics_DHARMa_uniform.png){width=70% fig-align="center"}
 
 ## conclusion
@@ -278,18 +305,20 @@ The DHARMa uniformity test compares the distribution of the modeled/expected res
 library(lterdatasampler) # data freely available, credits to https://lter.github.io/lterdatasampler/reference/and_vertebrates.html
 
 #load data
-data(knz_bison)
+data("hbr_maples")
 #inspect briefly
-head(knz_bison) # I'm interested in the relationship of age and weight in pounds
-#compute rough age of Bisons (I just have the birth and date when their weight was measured)
-knz_bison$age = (knz_bison$rec_year - knz_bison$animal_yob) + (30*(knz_bison$rec_month)+knz_bison$rec_day)/365
+head(hbr_maples) # I'm interested in the relationship of watershed (treatment with calcium or not) and stem_dry_mass (representing productivity)
+summary(hbr_maples)
+# also, elevation could have a strong influence on growth
+# stem_dry_mass ~ watershed + elevation
+# stem_dry_mass: continuous
+# watershed: treated (W1), not treated reference (Reference)
+# elevation: Low and Mid as categories 
 
-plot(animal_weight~age+animal_sex, data = knz_bison, las = 1, 
-     main = "relation of bisons age and weight", 
-     xlab = "age [years]", 
-     ylab = "weight [pounds]")
-
-### test function
-results = system_function(animal_weight~poly(age, 2)+animal_sex, data = knz_bison, mode = "test", dist = "gaussian")
-
-#well, there is a certain relationship, but the model diagnostics don't really look great
+#test the function
+test = system_function(stem_dry_mass ~ watershed * elevation, data = hbr_maples, mode = "test", dist = "gaussian")
+# there is definitely a plot missing!
+# good reporting of DHARMa results!
+# explanation of the model summary printed
+# take out the Hypothesis stuff!
+plot(stem_dry_mass ~ watershed * elevation, data = hbr_maples)
