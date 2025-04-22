@@ -3,12 +3,15 @@
 # store everything in a long list
 # do one branch for prediction, one branch for hyp. testing and one branch for data exploration
 
-# - include possibility for multivariate models - DONE
-# - reporting with quarto document
-# - include other families as well --> works with all glm families (distribution)
 # - effect sizes!
-# - include possibility to give formula - DONE
+# - add a plot!
+# - make DHARMa stuff better!
 
+
+#packages used
+# DHARMA
+# quarto
+# for test data sets: lterdatasampler
 
 system_function = function(formula,  data, mode, dist = "gaussian"){
   
@@ -17,7 +20,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   
   #get data from formula
   list$data_variables = all.vars(formula)
-  list$raw_data = data[list$data_variables] # subset data to just data that was used
+  list$raw_data = data[list$data_variables] # subset data to only the data that was used
   
   #store all the other variables as well
   list$data_all_including_unused = data
@@ -25,7 +28,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   #store other input information
   list$mode = mode
   list$dist = dist
-  #currently restricted to distributions supported by glm(): ?family
+  #currently restricted to distributions supported by glm(): ?family (glm.nb from MASS to be implemented later)
   
   #data checking
   list$data_na.omit = na.omit(list$raw_data) #delete all rows with NA values
@@ -64,6 +67,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
     #### model diagnostics####
     #normal model diagnostics:
+    
     #compute dispersion in case the dispersion is taken to be one and not estimated from data (as for gaussian, Gamma)
     # follow Dormann 2017: dispersion = residual deviance / residual degrees of freedom
     if (list$model_summary$dispersion==1){
@@ -72,7 +76,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
                                                list$diagn_dispersion_value, ".")
     } else{
       list$diagn_dispersion_text = paste0("Since the model uses a ", list$dist, 
-                                              "distribution, ", "the dispersion parameter is estimated from data to be ", 
+                                              " distribution, ", "the dispersion parameter as residual deviance is estimated from data to be ", 
                                               list$model_summary$dispersion, ".")
     }
     print(list$diagn_dispersion_text)
@@ -96,6 +100,16 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
       }
     }
     
+    #### "outliers" - using standard cook's distance D
+    list$diagn_influence_table = influence.measures(list$model) #compute other influence measures
+    list$diagn_cooks = cooks.distance(list$model) #compute cooks distance
+    #implement rule from Dormann 2017 (influential data points (n) have either D > 1 or D > 4/n)
+    list$diagn_cooks_critical_values = which(list$diagn_cooks>1| list$diagn_cooks>(4/nrow(list$data_na.omit)))
+    list$diagn_cooks_result = ifelse(length(list$diagn_cooks_critical_values)==0, 
+                                     "No critical cooks distance (D) values being greater than 1 or 4/n (n = number of data points) detected", 
+                                     paste(length(list$diagn_cooks_critical_values), "critical cooks distance values were detected. D values of either greater than 1 or greater 4/n (n being the number of observations) are defined as influential."))
+    cat("computing cook's distance finished\n")
+    
     #### prep-simulations for DHARMa diagnostics
     list$diagn_DHARMa_sim = DHARMa::simulateResiduals(list$model, n = 1000)
     cat("simulating DHARMa residuals finished\n")
@@ -108,16 +122,6 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
                                               "DHARMa outlier test detected significant outliers",
                                               "DHARMa outlier test did not detect any outliers")
     cat("DHARMa outlier test finished\n")
-    
-    #### "outliers" - using standard cook's distance D
-    list$diagn_influence_table = influence.measures(list$model) #compute other influence measures
-    list$diagn_cooks = cooks.distance(list$model) #compute cooks distance
-    #implement rule from Dormann 2017 (influential data points (n) have either D > 1 or D > 4/n)
-    list$diagn_cooks_critical_values = which(list$diagn_cooks>1| list$diagn_cooks>(4/nrow(list$data_na.omit)))
-    list$diagn_cooks_result = ifelse(length(list$diagn_cooks_critical_values)==0, 
-                                     "great! no critical cooks distance (D) values detected", 
-                                     paste("we detected", length(list$diagn_cooks_critical_values), "critical cooks distance values"))
-    cat("computing cook's distance finished\n")
     
     #### continue with DHARMa: 
     #### DHARMa dispersion test
@@ -194,6 +198,8 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   params_report$diagn_dispersion_text = list$diagn_dispersion_text
   params_report$diagn_dispersion_conclusion = list$diagn_dispersion_conclusion
   
+  params_report$diagn_cooks_result = list$diagn_cooks_result
+  
   #create quarto document for reporting
   cat('---
 title: "report automated statistical analysis"
@@ -208,6 +214,7 @@ params:
   na_omitted_number: NA
   diagn_dispersion_text: "text"
   diagn_dispersion_conclusion: "conclusion"
+  diagn_cooks_result: "result"
 ---
 
 ## input for `r params$mode`
@@ -239,6 +246,8 @@ For model diagnostics, we use a "conventional" approach and simulation based app
 `r params$diagn_dispersion_text`
 `r params$diagn_dispersion_conclusion`
 
+`r params$diagn_cooks_result`
+
 
 ### DHARMa-based model diagnostics
 The DHARMa outlier test:
@@ -249,6 +258,8 @@ The DHARMa dispersion test:
 
 The DHARMa uniformity test compares the distribution of the modeled/expected residuals(simulated from the fitted model) with a uniform distribution using a KS test (two sided as default) and returns a p value. If the p value is smaller than 0.05, the distribution of the simulated data significantly different from the the expected uniformal distribution.
 ![DHARMa uniformity test](../plots/diagnostics_DHARMa_uniform.png){width=70% fig-align="center"}
+
+## conclusion
 
 
 \
