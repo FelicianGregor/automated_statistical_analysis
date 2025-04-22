@@ -10,7 +10,7 @@
 
 
 #packages used
-# DHARMA
+# DHARMa
 # quarto
 # for test data sets: lterdatasampler
 
@@ -47,23 +47,23 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     #store model summary: result
     list$model_summary = summary(list$model)
     cat("model fitted!\n")
-    list$model_significance = list$model_summary$coefficients[,"Pr(>|t|)"]
+    list$model_significance = list$model_summary$coefficients[,4] #"Pr(>|t|)" / "Pr(>|z|)"
     list$model_text = "If the p-value is smaller than 0.05 (denoted with *, ** or ***) this indicates 
                       that your null hypothesis (H0) can be rejected and thus, your (alternative) 
                       Hypothesis (H1 / Ha) is assumed to hold until more data becomes available and 
                       could reject the null hypothesis."
     
     #check quickly if there are enough data points for the number of predictor variables:
-    #Dormann criterion: 5-10 data points per independent variable
+    #Dormann 2017 criterion: 5-10 data points per independent variable
     list$number_data_points_per_var = nrow(list$data_na.omit)/(ncol(list$model$model)-1)
     if(list$number_data_points_per_var<5){
       list$number_data_points_per_var_text = paste("You have only ", list$number_data_points_per_var, 
                                                    " data points per independent variable in your model. 
-                                                   This less than 5 - 10 data points per variable and can 
-                                                   cause strong overfitting. Please either simplify the model 
+                                                   Due to the small number of 5 - 10 data points per variable, 
+                                                   issues of strong over fittin are likely Please either simplify the model 
                                                    by removing independent variables or collect more data.")
     }
-    if(list$number_data_points_per_var<=10){
+    else if(list$number_data_points_per_var<=10){
       list$number_data_points_per_var_text = paste("You have only ", list$number_data_points_per_var, 
                                                    " data points per independent variable in your model. 
                                                    This less than  10 data points per variable and can 
@@ -93,6 +93,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
     #compute dispersion in case the dispersion is taken to be one and not estimated from data (as for gaussian, Gamma)
     # follow Dormann 2017: dispersion = residual deviance / residual degrees of freedom
+    print(list$model_summary$dispersion)
     if (list$model_summary$dispersion==1){
       list$diagn_dispersion_value = round((list$model_summary$deviance) / (list$model_summary$df.residual), 2)
       list$diagn_dispersion_text = paste("The dispersion value (defined as residual deviance devided by residual degrees of freedom) is", 
@@ -104,17 +105,18 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     }
     
     ## follow Dormann 2017 for criterion on over/under dispersion
+    print(list$diagn_dispersion_value)
     
     # in case dispersion parameter is estimated from data and 1:
-    if (grep("Since the model uses a", list$diagn_dispersion_text)){
+    if (list$model_summary$dispersion!=1){
       list$diagn_dispersion_conclusion = "Therefore, there can not appear dispersion issues."
     }
     # if dispersion > 2: over dispersion, if dispersion < 0.6: under dispersed, other: dispersion not an issue
     if (is.numeric(list$diagn_dispersion_value)==TRUE){
-      if (list$diagn_dispersion > 2){
+      if (list$diagn_dispersion_value > 2){
         list$diagn_dispersion_conclusion = "Since the value is greater than 2, we detected over dispersion issues."
       }
-      if (list$diagn_dispersion_value < 0.6){
+      else if (list$diagn_dispersion_value < 0.6){
         list$diagn_dispersion_conclusion = "Since the values is smaller than 0.6, we detected under dispersion issues"
       }
       else{
@@ -221,7 +223,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   params_report$summary = capture.output(summary(list$model))
   
   # model diagnostics
-  params_report$diagn_dispersion_value = list$diagn_dispersion_value
+  #params_report$diagn_dispersion_value = list$diagn_dispersion_value
   params_report$diagn_dispersion_text = list$diagn_dispersion_text
   params_report$diagn_dispersion_conclusion = list$diagn_dispersion_conclusion
   
@@ -326,7 +328,7 @@ summary(hbr_maples)
 # assumed relation: stem_dry_mass ~ watershed + elevation
 # stem_dry_mass: continuous
 # watershed: categorical: treated (W1), not treated reference (Reference)
-# year: numeric
+# year: numeric --> make factor
 # elevation: Low and Mid as levels 
 
 #test the function
@@ -335,3 +337,12 @@ test = system_function(stem_dry_mass ~ watershed * as.factor(year), data = hbr_m
 # explanation of the model summary printed
 plot(stem_dry_mass ~ watershed* leaf2area, data = hbr_maples, las = 1, alpha = 0.8, ask = F)
 
+
+# another test:
+#install.packages("AER")
+library(AER)
+data("NMES1988")
+test2 = system_function(visits ~ health + age + gender + married + income + insurance,
+                data = NMES1988, dist = "poisson", mode = "test")
+
+plot(res)
