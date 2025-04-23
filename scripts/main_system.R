@@ -5,7 +5,7 @@
 
 # - 2 effect sizes! / or better short introduction how to read the summary(glm)-output? 
 # - 3 add effects in plots (lots of work in case i need to write the code by myself...)
-# - 1 make DHARMa stuff better! 
+# - 1 make DHARMa stuff better! - add residuals plot!
 # - 4 include automatic model adjustment just with deleted cooks D values?
 
 
@@ -48,10 +48,10 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     list$model_summary = summary(list$model)
     cat("model fitted!\n")
     list$model_significance = list$model_summary$coefficients[,4] #"Pr(>|t|)" / "Pr(>|z|)"
-    list$model_text = "If the p-value is smaller than 0.05 (denoted with *, ** or ***) this indicates 
-                      that your null hypothesis (H0) can be rejected and thus, your (alternative) 
-                      Hypothesis (H1 / Ha) is assumed to hold until more data becomes available and 
-                      could reject the null hypothesis."
+    list$model_significance_text = "If the p-value of the variable is smaller than 0.05 (denoted with one to three stars in the model summary below) 
+                      this indicates that the null hypothesis (H0) should be rejected and thus, your alternative hypothesis (H1 / Ha) 
+                      is assumed to hold until more data becomes available and could reject the null hypothesis.
+                      Below, the full model summary is provided for further details:"
     
     #check quickly if there are enough data points for the number of predictor variables:
     #Dormann 2017 criterion: 5-10 data points per independent variable
@@ -70,7 +70,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
                                                    cause overfitting. Please either simplify the model 
                                                    by removing independent variables or collect more data.")
     }else{
-      list$number_data_points_per_var_text = paste("Your model contains ", list$number_data_points_per_var,  " data points per independent variable which is sufficient for your model.")
+      list$number_data_points_per_var_text = paste("Your model contains ", list$number_data_points_per_var,  " data points per independent variable which is sufficient for your model to avoid over fitting.")
     }
     
     #effect sizes: Is the effect actually large?
@@ -93,7 +93,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
     #compute dispersion in case the dispersion is taken to be one and not estimated from data (as for gaussian, Gamma)
     # follow Dormann 2017: dispersion = residual deviance / residual degrees of freedom
-    print(list$model_summary$dispersion)
+    
     if (list$model_summary$dispersion==1){
       list$diagn_dispersion_value = round((list$model_summary$deviance) / (list$model_summary$df.residual), 2)
       list$diagn_dispersion_text = paste("The dispersion value (defined as residual deviance devided by residual degrees of freedom) is", 
@@ -105,7 +105,6 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     }
     
     ## follow Dormann 2017 for criterion on over/under dispersion
-    print(list$diagn_dispersion_value)
     
     # in case dispersion parameter is estimated from data and 1:
     if (list$model_summary$dispersion!=1){
@@ -120,7 +119,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
         list$diagn_dispersion_conclusion = "Since the values is smaller than 0.6, we detected under dispersion issues"
       }
       else{
-        list$diagn_dispersion_conclusion = "Since the dispersion value lies between 0.6 and 2, no disperion issues were detected."
+        list$diagn_dispersion_conclusion = "Since the dispersion value lies between 0.6 and 2, no dispersion issues were detected."
       }
     }
     
@@ -143,8 +142,8 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     list$diagn_DHARMa_outlier = DHARMa::testOutliers(list$diagn_DHARMa_sim, n = 1000)
     dev.off() 
     list$diagn_DHARMa_outlier_result = ifelse(list$diagn_DHARMa_outlier$p.value < 0.05, 
-                                              "DHARMa outlier test detected significant outliers",
-                                              "DHARMa outlier test did not detect any outliers")
+                                              "DHARMa outlier test detected significant outliers.",
+                                              "DHARMa outlier test did not detect any outliers.")
     cat("DHARMa outlier test finished\n")
     
     #### continue with DHARMa: 
@@ -154,14 +153,14 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     list$diagn_DHARMa_dispersion =  DHARMa::testDispersion(list$diagn_DHARMa_sim)
     dev.off()
     list$diagn_DHARMa_dispersion_result = ifelse(list$diagn_DHARMa_dispersion$p.value < 0.05, 
-                                                 "DHARMa detected over / underdispersion", 
-                                                 "DHARMa did not detect dispersion issues") 
+                                                 "DHARMa detected over / underdispersion.", 
+                                                 "DHARMa did not detect dispersion issues.") 
     #if disp$p.value < 0.05 --> dispersion test significant --> over / under dispersion
     cat("DHARMa dispersion test finished\n")
     
-    ### DHARMa resudual test: test for uniformal distribution of simulated residuals
+    ### DHARMa residual test: test for uniformal distribution of simulated residuals
     #simulates residuals from the model, that should be equally distributed around the model
-    # compares the modeled/expected residuals and observed residuals: modeled follow uniform distribution, observed should, too
+    # compares the quantiles of modeled scaled quantile residuals and quantiles of uniform distribution: modeled should follow uniform distribution, too --> straight line
     # ks. test tests if they are from the same distribution (so uniform)
     # Ha: don't come from the same dist, H0: come from the same dist
     # if H0 p < 0.05, H0 is rejected and we assume, Ha is true, so they dot come from same distribution
@@ -169,13 +168,11 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     list$diagn_DHARMa_residuals_uniform = DHARMa::testUniformity(list$diagn_DHARMa_sim)
     dev.off()
     list$diagn_DHARMa_residuals_uniform_result = ifelse(list$diagn_DHARMa_residuals_uniform$p.value < 0.05, 
-                                                        "DHARMa detected deviations from residual uniformity", 
-                                                        "DHARMa did not detect suspicious deviances")
+                                                        "DHARMa detected deviations from residual uniformity.", 
+                                                        "DHARMa did not detect suspicious deviances.")
     cat("DHARMa residual test finished\n")
     
     #### plotting####
-    #define plot function that creates scatter plot and adds a simple abline (although not being the most elegant way)
-    # attention! plotting is done on the link scale! (in case distribution is "gaussian" or "Gamma" ,link scale = response scale)
     
     #start the "recording" using png (before setting the par)
     png('./output/plots/plot.png', width = 8, units = "in", height = 5, res = 300)
@@ -185,6 +182,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     if ((ncol(list$model$model)-1) < 1){
       par(mfrow = c(1,1))
     } else{
+      #adjust some par for more space efficient plotting when having more than one rows
       par(mfrow = c(list$plot_rows_needed, 2))
       par(mar = c(4.5, 4, 0.5, 0.5))
       par(tcl = 0.5) # axis ticks inside the window
@@ -220,12 +218,16 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
   # model fitting:
   params_report$model_significance = capture.output(list$model_significance)
+  params_report$model_significance_text = list$model_significance_text
   params_report$summary = capture.output(summary(list$model))
   
   # model diagnostics
   #params_report$diagn_dispersion_value = list$diagn_dispersion_value
   params_report$diagn_dispersion_text = list$diagn_dispersion_text
   params_report$diagn_dispersion_conclusion = list$diagn_dispersion_conclusion
+  params_report$diagn_DHARMa_residuals_uniform_result = list$diagn_DHARMa_residuals_uniform_result
+  params_report$diagn_DHARMa_dispersion_result = list$diagn_DHARMa_dispersion_result
+  params_report$diagn_DHARMa_outlier_result = list$diagn_DHARMa_outlier_result
   
   params_report$diagn_cooks_result = list$diagn_cooks_result
   
@@ -235,17 +237,21 @@ title: "report automated statistical analysis"
 format: html
 editor: visual
 params:
-  dist: "gaussian"
+  dist: "distribution failed"
   p.value: 0.03
-  mode: "test"
-  formula: "y~x"
-  summary: "summary"
+  mode: "test failed"
+  formula: "y~x failed"
+  summary: "summary failed"
   na_omitted_number: NA
-  diagn_dispersion_text: "text"
-  diagn_dispersion_conclusion: "conclusion"
-  diagn_cooks_result: "result"
+  diagn_dispersion_text: "text failed"
+  diagn_dispersion_conclusion: "conclusion failed"
+  diagn_cooks_result: "result failed"
   number_data_points_per_var_text: "this text was not displayed correctly"
-  model_significance: "significance"
+  model_significance: "significance failed"
+  model_significance_text: "significant text failed"
+  diagn_DHARMa_residuals_uniform_result: "uniform result failed"
+  diagn_DHARMa_dispersion_result: "dispersion text failed"
+  diagn_DHARMa_outlier_result: "outlier test text failed"
 ---
 
 ## input for `r params$mode`
@@ -268,8 +274,7 @@ Here, the significance values (p-values) for each independent variable are print
 cat(params$model_significance, sep = "\n")
 
 ```
-If the p-value of the variable is smaller than 0.05 (denoted with one to three "*" in the model summary below) this indicates that the null hypothesis (H0) can be rejected and thus, your alternative hypothesis (H1 / Ha) is assumed to hold until more data becomes available and could reject the null hypothesis.
-Below, the full model summary is shown for further details:
+`r params$model_significance_text`
 
 ```{r}
 #| echo: false
@@ -292,13 +297,21 @@ For model diagnostics, we use a "conventional" approach and simulation based app
 
 
 ### DHARMa-based model diagnostics
-The DHARMa outlier test:
+DHARMa simulates a specified number of values for the dependent variable y given the defined model for each independent x value. The simulated values are sorted in ascending order and the quantile is determined for the observed y value, thus the values range from 0 to 1. In case the observed value is smaller or larger than every single simulated value (quantile 0 or 1) the value is considered as outlier. Please note that the probability of detecting outliers depends on the number of simulated values, making outliers more likely when increasing the number of simulations. We selected n = 1000.
+For your model the 
+`r params$diagn_DHARMa_outlier_result`
+
 ![DHARMa outlier test](../plots/diagnostics_DHARMa_outliers.png){width=70% fig-align="center"}
 
-The DHARMa dispersion test:
+The DHARMa dispersion test computes the mean variance of the data given the specified model var(observed - predicted) and the variances of the simulated data using a histogram (computing the variance var(simulated - predicted) for every x value), thus displaying the distribution of the simulated variance. It performs a test for significant deviation of the real from the expected (simulated) variance and returns a p value. If p < 0.05, the variance differes significantly. In the plot the value of the observed mean residual variance is marked by a red line.
+For the specified model `r params$diagn_DHARMa_dispersion_result`
+
 ![DHARMa dispersion test](../plots/diagnostics_DHARMa_dispersion.png){width=70% fig-align="center"}
 
-The DHARMa uniformity test compares the distribution of the modeled/expected residuals (simulated from the fitted model) with a uniform distribution using a KS test (two sided as default) and returns a p value. If the p value is smaller than 0.05, the distribution of the simulated data significantly different from the the expected uniformal distribution.
+The DHARMa uniformity test compares the distribution of the modeled/expected residuals (simulated from the fitted model) with a uniform distribution using a KS test (two sided as default) and returns a p value. If the p value is smaller than 0.05, the distribution of the simulated data is significantly different from the the expected uniformal distribution.
+A QQ-plot is displayed. 
+`r params$diagn_DHARMa_residuals_uniform_result`
+
 ![DHARMa uniformity test](../plots/diagnostics_DHARMa_uniform.png){width=70% fig-align="center"}
 
 ## conclusion
@@ -335,7 +348,7 @@ summary(hbr_maples)
 test = system_function(stem_dry_mass ~ watershed * as.factor(year), data = hbr_maples, mode = "test", dist = "gaussian")
 # better reporting of DHARMa results!
 # explanation of the model summary printed
-plot(stem_dry_mass ~ watershed* leaf2area, data = hbr_maples, las = 1, alpha = 0.8, ask = F)
+plot(stem_dry_mass ~ watershed * elevation * year, data = hbr_maples, las = 1, alpha = 0.8, ask = F)
 
 
 # another test:
@@ -345,4 +358,3 @@ data("NMES1988")
 test2 = system_function(visits ~ health + age + gender + married + income + insurance,
                 data = NMES1988, dist = "poisson", mode = "test")
 
-plot(res)
