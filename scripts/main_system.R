@@ -1,12 +1,10 @@
 #### build system skeleton ####
-# use s3 classes for using generic plot functions etc. (--> later?)
-# store everything in a long list
-# do one branch for prediction, one branch for hyp. testing and one branch for data exploration
 
-# - 2 effect sizes! / or better short introduction how to read the summary(glm)-output? 
-# - 3 add effects in plots (lots of work in case i need to write the code by myself...)
-# - 1 make DHARMa stuff better! - add residuals plot!
-# - 4 include automatic model adjustment just with deleted cooks D values?
+#to do:
+# - 2 effect sizes! / or better short introduction on how to read the summary(glm)-output? 
+# - 3 add effects in plots (lots of work in case i need to write the code by myself...) --> ggeffects::ggpredict()?
+# - 1 make DHARMa diagnostics better! - add residuals plot!
+# - 4 include automatic model adjustment just with deleted cooks D values (as a first simple check if model adjustments work)?
 
 
 #packages used
@@ -31,7 +29,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   list$dist = dist
   #currently restricted to distributions supported by glm(): ?family (glm.nb from MASS to be implemented later)
   
-  #data checking
+  ##### data checking 
   list$data_na.omit = na.omit(list$raw_data) #delete all rows with NA values
   list$data_na.omitted_number = length(list$raw_data) - length(list$data_na.omit)
   list$data_na.omitted_number_text = paste(list$data_na.omitted_number, "NA's omitted\n")
@@ -40,7 +38,8 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
   #check the mode and enter the hypothesis test mode if mode = "test" == TRUE
   if (mode == "test"){
     
-    #model fit, based on specified hypothesis
+    #### build model ####
+    #based on specified hypothesis
     list$model = glm(formula, data = list$data_na.omit, family = list$dist)
     # "gaussian", "binomial", "Gamma", "inverse.gaussian", "poisson", "quasibinomial", "quasipoisson", "quasi"
     
@@ -74,14 +73,15 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     }
     
     #effect sizes: Is the effect actually large?
-    #following Nakagawa and Cuthill 2007 (review article on effect sizes): report slope and CI, as well as r statistics (correlations, partial corerelations)
+    #following Nakagawa and Cuthill 2007 (review article on effect sizes in ecology): report slope and CI, as well as r statistics (correlations, partial corerelations)
     # pay attention to link and response scale: backtransform
     list$model$coefficients_response_scale = list$model$family$linkinv(list$model$coefficients)
     #standard error back transform??
     
     #correlations / partial correlations? (to adjust for other variables influence)
     
-    #calculate the prediction for every stupid variable...?
+    #calculate the prediction for every stupid x variable / level...? 
+    #Or provide just a short explanation how to do the calculation?
     
     
     
@@ -130,7 +130,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     list$diagn_cooks_critical_values = which(list$diagn_cooks>1| list$diagn_cooks>(4/nrow(list$data_na.omit)))
     list$diagn_cooks_result = ifelse(length(list$diagn_cooks_critical_values)==0, 
                                      "No critical cooks distance (D) values being greater than 1 or 4/n (n = number of data points) detected", 
-                                     paste(length(list$diagn_cooks_critical_values), "critical cooks distance values were detected. D values of either greater than 1 or greater 4/n (n being the number of observations) are defined as influential."))
+                                     paste(length(list$diagn_cooks_critical_values), "critical cooks distance values (D) were detected. D values of either greater than 1 or greater 4/n (n being the number of observations) are defined as influential."))
     cat("computing cook's distance finished\n")
     
     #### prep-simulations for DHARMa diagnostics
@@ -142,18 +142,19 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     list$diagn_DHARMa_outlier = DHARMa::testOutliers(list$diagn_DHARMa_sim, n = 1000)
     dev.off() 
     list$diagn_DHARMa_outlier_result = ifelse(list$diagn_DHARMa_outlier$p.value < 0.05, 
-                                              "DHARMa outlier test detected significant outliers.",
+                                              "**DHARMa outlier test detected significant outliers.**",
                                               "DHARMa outlier test did not detect any outliers.")
     cat("DHARMa outlier test finished\n")
     
-    #### continue with DHARMa: 
+    #### continue with DHARMa model diagnostics: ####
+    
     #### DHARMa dispersion test
     # save plot to ".output/plots" as pdf for later incorporating graph in the report
     png('./output/plots/diagnostics_DHARMa_dispersion.png', width = 6, height = 4, res = 300, units = "in")
     list$diagn_DHARMa_dispersion =  DHARMa::testDispersion(list$diagn_DHARMa_sim)
     dev.off()
     list$diagn_DHARMa_dispersion_result = ifelse(list$diagn_DHARMa_dispersion$p.value < 0.05, 
-                                                 "DHARMa detected over / underdispersion.", 
+                                                 "**DHARMa detected over / underdispersion.**", 
                                                  "DHARMa did not detect dispersion issues.") 
     #if disp$p.value < 0.05 --> dispersion test significant --> over / under dispersion
     cat("DHARMa dispersion test finished\n")
@@ -168,7 +169,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     list$diagn_DHARMa_residuals_uniform = DHARMa::testUniformity(list$diagn_DHARMa_sim)
     dev.off()
     list$diagn_DHARMa_residuals_uniform_result = ifelse(list$diagn_DHARMa_residuals_uniform$p.value < 0.05, 
-                                                        "DHARMa detected deviations from residual uniformity.", 
+                                                        "**DHARMa detected deviations from residual uniformity.**", 
                                                         "DHARMa did not detect suspicious deviances.")
     cat("DHARMa residual test finished\n")
     
@@ -203,7 +204,7 @@ system_function = function(formula,  data, mode, dist = "gaussian"){
     
   }
   
-  ##### reporting ####
+  ##### reporting #####
   #create a long list params for quarto document
   
   # input:
@@ -310,7 +311,7 @@ For the specified model `r params$diagn_DHARMa_dispersion_result`
 
 The DHARMa uniformity test compares the distribution of the modeled/expected residuals (simulated from the fitted model) with a uniform distribution using a KS test (two sided as default) and returns a p value. If the p value is smaller than 0.05, the distribution of the simulated data is significantly different from the the expected uniformal distribution.
 A QQ-plot is displayed. 
-`r params$diagn_DHARMa_residuals_uniform_result`
+For the model specified `r params$diagn_DHARMa_residuals_uniform_result`
 
 ![DHARMa uniformity test](../plots/diagnostics_DHARMa_uniform.png){width=70% fig-align="center"}
 
@@ -357,4 +358,3 @@ library(AER)
 data("NMES1988")
 test2 = system_function(visits ~ health + age + gender + married + income + insurance,
                 data = NMES1988, dist = "poisson", mode = "test")
-
