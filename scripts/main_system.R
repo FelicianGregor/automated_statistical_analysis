@@ -8,6 +8,19 @@
 
 system_function = function(formula, data, mode, dist = "uninormal"){
   #! comment on the input!!!
+  
+  # create a folder structure for saving the results, if not existing:
+  if (dir.exists("./automated_statistical_analysis")){
+    #print message if directories are created
+    message("The Automated Statistician creates a folder structure for saving results in your working directory.")
+    
+    dir.create("./automated_statistical_analysis")
+    dir.create("./automated_statistical_analysis/output")
+    dir.create("./automated_statistical_analysis/output/plots")
+    dir.create("./automated_statistical_analysis/output/report")
+    dir.create("./automated_statistical_analysis/output/tables")
+  }
+  
   #create the long storage list
   #create the long storage list
   list = list()
