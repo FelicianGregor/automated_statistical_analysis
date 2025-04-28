@@ -1,12 +1,5 @@
 #### build system skeleton ####
 
-#to do:
-# - 2 effect sizes! / or better short introduction on how to read the summary(glm)-output? 
-# - 3 add effects in plots (lots of work in case i need to write the code by myself...) --> ggeffects::ggpredict()?
-# - 1 make DHARMa diagnostics better! - add residuals plot!
-# - 4 include automatic model adjustment just with deleted cooks D values (as a first simple check if model adjustments work)?
-
-
 #packages used
 # DHARMa
 # quarto
@@ -358,3 +351,11 @@ library(AER)
 data("NMES1988")
 test2 = system_function(visits ~ health + age + gender + married + income + insurance,
                 data = NMES1988, dist = "poisson", mode = "test")
+
+###### to do ######
+# - 2 effect sizes! / or better short introduction on how to read the summary(glm)-output? 
+# - 3 add effects in plots (lots of work in case i need to write the code by myself...) --> ggeffects::ggpredict()?
+# - 1 make DHARMa diagnostics better! - add residuals plot!
+# - 4 include automatic model adjustment just with deleted cooks D values (as a first simple check if model adjustments work)?
+
+
