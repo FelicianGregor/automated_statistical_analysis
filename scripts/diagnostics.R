@@ -42,7 +42,6 @@ diagnose = function(list, verbose = TRUE){
   
   ##### DHARMa based diagnostics #####
   source("./scripts/helper_functions.R") #load function from other scripts
-  
   all_integers = all(sapply(list$data_na.omit[,1], all_integers)) #sapply to apply function to every cell in col and check if every cell is int with all
   
   #do the prep simulations and create DHARMa object
@@ -112,7 +111,5 @@ diagnose = function(list, verbose = TRUE){
   if (verbose){
     cat("DHARMa residual test finished\n")
   }
-    
-  
   return(list)
 }

@@ -1,4 +1,5 @@
 report = function(list, verbose = T){
+  library(stringr) # for removing pattern ("\n\n") from family character
   
   #explaining text for p values
   list$model_significance_text = "If the p-value of the variable is smaller than 0.05 (denoted with one to three stars in the model summary below) 
@@ -34,7 +35,7 @@ report = function(list, verbose = T){
   # input:
   params_report = list()
   params_report$mode = ifelse(list$mode=="test", "hypothesis test", list$mode)
-  params_report$dist = list$dist
+  params_report$dist = stringr::str_remove(list$model@family@blurb[1], "\n\n")
   params_report$formula = paste(list$model@terms)
   # paste(names(list$data_na.omit)[1], " ~ ", paste(attr(list$model$terms, "term.labels"), collapse = " + "))
   # data checking:
@@ -82,9 +83,9 @@ params:
 ## input for `r params$mode`
 
 You fitted a generalized linear model (`glm()`-function in R) for `r params$mode` assuming the following relationship:
-`r params$formula`
+``r params$formula``
 
-You assumed a `r params$dist` distribution.
+You assumed a `r params$dist`.
 Please be aware that you chose the mode "`r params$mode`" of the automated statistician that differs from the two other available modes.
 
 ## data preparation

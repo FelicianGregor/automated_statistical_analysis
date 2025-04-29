@@ -1,4 +1,4 @@
-prepare_data = function(formula, data, mode, list = list, verbose = TRUE){
+prepare_data = function(formula, data, mode, list = list, dist, verbose = TRUE){
   
   if (verbose){
     cat("enter the data checking\n")
@@ -7,7 +7,7 @@ prepare_data = function(formula, data, mode, list = list, verbose = TRUE){
   #get all the input data and store it:
   list$mode = mode
   list$dist = dist
-  list$formula = formula
+  list$formula = as.formula(formula)
   list$data_variables = all.vars(formula)
   list$raw_data = data[list$data_variables] # subset data to only the data that was used
   list$data_all_including_unused = data #store all the other variables as well

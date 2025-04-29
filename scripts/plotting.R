@@ -1,4 +1,5 @@
 plotting = function(list, verbose = T){
+  if (verbose){cat("entered plotting\n")}
   #start the "recording" using png (before setting the par)
   png('./output/plots/plot.png', width = 8, units = "in", height = 5, res = 300)
 
@@ -16,10 +17,10 @@ plotting = function(list, verbose = T){
   }
   
   #start actual plotting
-  plot(formula, data = data, las = 1, ask = F, cex = 0.7)
+  plot(list$formula, data = list$data_na.omit, las = 1, ask = F, cex = 0.7)
   dev.off()
   par(mfrow = c(1, 1), mar = c(5, 4, 4, 2)) # set par() back
-  if (verbose){cat("plot done\n")}
+  if (verbose){cat("plotting done\n")}
   
   return(list)
 }
