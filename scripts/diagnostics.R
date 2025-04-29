@@ -76,9 +76,6 @@ diagnose = function(list, verbose = TRUE){
     cat("DHARMa outlier test finished\n")
   }
   
-  
-  
-  
   #continue with DHARMa model diagnostics
   
   #### DHARMa dispersion test
@@ -94,15 +91,13 @@ diagnose = function(list, verbose = TRUE){
     cat("DHARMa dispersion test finished\n")
   }
   
-  
-  
   ### DHARMa residual test: test for uniformal distribution of simulated residuals
   #simulates residuals from the model, that should be equally distributed around the model
   # compares the quantiles of modeled scaled quantile residuals and quantiles of uniform distribution: modeled should follow uniform distribution, too --> straight line
   # ks. test tests if they are from the same distribution (so uniform)
   # Ha: don't come from the same dist, H0: come from the same dist
   # if H0 p < 0.05, H0 is rejected and we assume, Ha is true, so they dot come from same distribution
-  png('./output/plots/diagnostics_DHARMa_uniform.png', width = 6, units = "in", height = 4, res = 300)
+  png('./output/plots/diagnostics_DHARMa_uniform.png', width = 6, units = "in", height = 6, res = 300)
   list$diagn_DHARMa_residuals_uniform = DHARMa::testUniformity(list$diagn_DHARMa_sim)
   dev.off()
   list$diagn_DHARMa_residuals_uniform_result = ifelse(list$diagn_DHARMa_residuals_uniform$p.value < 0.05, 

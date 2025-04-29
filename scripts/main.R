@@ -104,6 +104,6 @@ test2 = system_function(visits ~ health + age + gender + married + income + insu
 # - 4 include automatic model adjustment just with deleted cooks D values (as a first simple check if model adjustments work)?
 # - 5 cooks distance issues #
 # - 6 have errors due to poly(x, 2) in formula when plotting in mind
-# - 7 write understandable code for dispersion and deviance stuff # later, after asnwer from Dormann
+# - 7 write understandable code for dispersion and deviance stuff # later, after answer from Dormann
 # - 9 add more information on input data! => comprehensive data checking and report the findings
 # - 10 computation of effects (coefficients) in vglm on response scale did not work...
