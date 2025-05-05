@@ -8,6 +8,7 @@
 # VGAM -> system is based on the vglm() function
 # for test data sets: lterdatasampler
 
+
 system_function = function(formula, data, mode, dist = "uninormal", verbose = TRUE){
 
   # create a folder structure for saving the results, if not existing:
@@ -63,6 +64,7 @@ system_function = function(formula, data, mode, dist = "uninormal", verbose = TR
 
 #try out with some data:
 library(lterdatasampler)
+library(DHARMa)
 data = knz_bison
 knz_bison$age = knz_bison$rec_year - knz_bison$animal_yob
 
@@ -107,3 +109,6 @@ test2 = system_function(visits ~ health + age + gender + married + income + insu
 # - 7 write understandable code for dispersion and deviance stuff # later, after answer from Dormann
 # - 9 add more information on input data! => comprehensive data checking and report the findings
 # - 10 computation of effects (coefficients) in vglm on response scale did not work...
+# - 11 for small number of observation: add error bars using bootstrapping
+# - Mit options(warn=2) kann man R zwingen, alle Warnungen in Fehlermeldungen umzu-
+# - Mit options(warn=2) kann man R zwingen, alle Warnungen in Fehlermeldungen umzuwandeln, bei warn=-1 werden sie alle ignoriert: siehe ?options unter warn.
