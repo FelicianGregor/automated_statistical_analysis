@@ -65,6 +65,7 @@ system_function = function(formula, data, mode, dist = "uninormal", verbose = TR
 #try out with some data:
 library(lterdatasampler)
 library(DHARMa)
+library(VGAM)
 data = knz_bison
 knz_bison$age = knz_bison$rec_year - knz_bison$animal_yob
 
