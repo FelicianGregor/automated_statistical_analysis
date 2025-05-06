@@ -110,5 +110,4 @@ test2 = system_function(visits ~ health + age + gender + married + income + insu
 # - 9 add more information on input data! => comprehensive data checking and report the findings
 # - 10 computation of effects (coefficients) in vglm on response scale did not work...
 # - 11 for small number of observation: add error bars using bootstrapping
-# - Mit options(warn=2) kann man R zwingen, alle Warnungen in Fehlermeldungen umzu-
 # - Mit options(warn=2) kann man R zwingen, alle Warnungen in Fehlermeldungen umzuwandeln, bei warn=-1 werden sie alle ignoriert: siehe ?options unter warn.
