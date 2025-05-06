@@ -2,9 +2,9 @@ all_integers = function(response_value){
   #define function to check if value is integer or not (in order to use integerResponse in DHARMa correctly)
   return(floor(response_value) %% response_value == 0 | is.null(response_value))
 }
-is_cat = function(x){
-  "takes input and returns true if first element needs to get treated categorical, meaning being either a character or factor"
-  res = (is.character(x) || is.factor(x))
+is_fac = function(x){
+  "takes as x an input vglm model input and returns TRUE, if the predictor term is a factor"
+  res =  attr(terms(x), "dataClasses")[2:length(attr(terms(x), "dataClasses"))][1] == "factor"
   return(res)
   }
 header = function(){

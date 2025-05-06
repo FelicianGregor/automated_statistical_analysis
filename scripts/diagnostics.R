@@ -45,16 +45,17 @@ diagnose = function(list, verbose = TRUE){
   if (verbose){cat("DHARMa plot saved\n")}
   
   # make the quantile plots for every predictor, additionally adding the name of the predictor
-  list$misc$pred_names_formula = all.vars(list$model@call$formula)[-1]
+  list$misc$pred_names_formula = test[["data_variables"]][2:length(test[["data_variables"]])] #get the predictor variables name without e.g. as.factor()
+  print(list$misc$pred_names_formula)
   list$diagn_DHARMa$quantile_test_per_pred = list()
   
   source("./scripts/helper_functions.R") #load helper function to determine whether data needs to get treated in DHARMa as categorical
   
   for (i in list$misc$pred_names_formula) {
     # check if categorical or continuous predictor to use proper test function (testQuantile is somehow producing a plot with cat predictor, but no output, seems to be a bug)
-    png(paste0("./output/plots/quantile_plot_", list$misc$pred_names_formula[i], ".png"), width = 5, height = 5, units = "in", res = 400)
-    list$diagn_DHARMa$quantile_test_per_pred[[i]] <- if (is_cat(list$data_na.omit[[i]])) {
-      testCategorical(list$diagn_DHARMa$sim, catPred = list$data_na.omit[[i]]) 
+    png(paste0("./output/plots/quantile_plot_", i, ".png"), width = 5, height = 5, units = "in", res = 400)
+    list$diagn_DHARMa$quantile_test_per_pred[[i]] <- if (is_fac(list$model)) {
+      testCategorical(list$diagn_DHARMa$sim, catPred = as.factor(list$data_na.omit[[i]])) 
     } else {
       testQuantiles(list$diagn_DHARMa$sim, predictor = list$data_na.omit[[i]])
     }
