@@ -17,6 +17,12 @@ prepare_data = function(formula, data, mode, list = list, dist, verbose = TRUE){
   list$data_na.omitted_number = length(list$raw_data) - length(list$data_na.omit)
   list$data_na.omitted_number_text = paste(list$data_na.omitted_number, "NA's omitted\n")
   
+  # check the data for strong correlations between predictor variables 
+  
+  # number of data points per variable
+  
+  #skewness of data
+  
   if (verbose){
     cat(list$data_na.omitted_number_text) # print out to console
     cat("finished data checking successfully!\n")

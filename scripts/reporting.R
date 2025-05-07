@@ -12,21 +12,34 @@ report = function(list, verbose = T){
                                                          "`", list$reporting$input_data_prep$input_formula, "`")
   #save assumed distribution
   list$misc$distribution_name = stringr::str_remove(list$model@family@blurb[1], "\n\n")
-  list$reporting$input_data_prep$dist_sentence = paste0("You assumed a",list$misc$distribution_name , ".")
+  list$reporting$input_data_prep$dist_sentence = paste0("You assumed a ",list$misc$distribution_name , ". ")
   
-  list$reporting$input_data_prep$NA_sentence = paste0("We detected ", list$data_na.omitted_number, " NA values that were deleted.")
+  list$reporting$input_data_prep$NA_sentence = paste0("We detected ", list$data_na.omitted_number, " NA values that were deleted. ")
   list$reporting$input_data_prep$number_data_points_per_var = (nrow(list$data_na.omit)) / (ncol(list$model@x) - 1)
   
   list$reporting$input_data_prep$variable_number_sentence = paste0("Your model contains ", list$reporting$input_data_prep$number_data_points_per_var, 
-                                                                   " data points per independent variable.")
+                                                                   " data points per independent variable, ")
   
   # apply condition from dormann 2017: 5-10 data points per variable can cause issues of overfitting 
   list$reporting$input_data_prep$variable_number_issues_sentence = if (list$reporting$input_data_prep$number_data_points_per_var < 5){
-    "which is less than 5 and therefore can cause serious problems due to overfitting with too little data points per predictor variable."
+    "which is less than 5 and therefore can cause serious problems due to overfitting with too little data points per predictor variable. "
   } else if (list$reporting$input_data_prep$number_data_points_per_var <= 10){
-    "which is between 5 and 10 and therefore could cause problems due to overfitting with too little data points per predictor variable."
+    "which is between 5 and 10 and therefore could cause problems due to overfitting with too little data points per predictor variable. "
   } else if (list$reporting$input_data_prep$number_data_points_per_var > 10){
-    "which are enough observations per predictor variable to avoid overfitting issues of the model."
+    "which are enough observations per predictor variable to avoid overfitting issues of the model. "
+  }
+  
+  # collinearity issues in case abs(corr) > 0.7 (Dormann 2017 / 2013):
+  if (list$diagnostics$corr_number_critical_tau > 0){
+    list$reporting$input_data_prep$corr_issues_sentence = paste("The following predictors are highly correlated suggesting issues with collinearity among the independent variables. This can lead to variance inflation of your parameter estimates. Below, please find the critical predictors pairs and their respective correlation values (Kendall's Tau). ")
+    list$reporting$input_data_prep$corr_table = '```{r}
+#| echo: false
+list = readRDS("list_reporting.RDS")
+print(list$diagnostics$corr_critical_res_table)
+
+```'
+  } else{
+    list$reporting$input_data_prep$corr_issues_sentence = "We did not detect high correlation values (tau > 0.7) among the predictor variables suggesting no variance inflation issues. "
   }
   
   ##### model result ####
@@ -61,13 +74,15 @@ report = function(list, verbose = T){
                                                     "DHARMa did not find suspicious deviations of the quantiles from th expected values.")
   
   ##### conclusion ####
+  
+  # save list to output! --> then load it in quarto and use it for printing:
+  saveRDS(list, "output/reports/list_reporting.RDS")
 
 
   ### create params list for R-like output in chunk (model summary, especially) - to get replaced by html table?
   params = list()
   params$model_results_output = list$reporting$model_results$summary_output
   params$significance_output = list$reporting$model_results$significance_output
-    print(params$significance_output)
   ### dynamically write text:
   source("./scripts/helper_functions.R") #load header() add() and new_line() function
   
@@ -77,16 +92,27 @@ report = function(list, verbose = T){
   ### input para
   add("## input data")
   new_line()
+  new_line()
   add(list$reporting$input_data_prep$model_sentence)
   new_line()
   add(list$reporting$input_data_prep$dist_sentence)
   add(list$reporting$input_data_prep$NA_sentence)
   add(list$reporting$input_data_prep$variable_number_sentence)
+  new_line()
   add(list$reporting$input_data_prep$variable_number_issues_sentence)
   new_line()
+  new_line()
+  add(list$reporting$input_data_prep$corr_issues_sentence)
+  new_line()
+  if (list$diagnostics$corr_number_critical_tau > 0){
+    add(list$reporting$input_data_prep$corr_table)
+    new_line()
+  }
   
   #model results
+  new_line()
   add("## results")
+  new_line()
   new_line()
   add(list$reporting$model_results$intro)
   new_line()
@@ -106,11 +132,14 @@ cat(params$model_results_output, sep = "\n")
   new_line()
   add(list$reportig$model_results$plots_text_intro)
   new_line()
+  new_line()
   add('![plot](../plots/plot.png){width=80% fig-align="center"}')
+  new_line()
   new_line()
   
   ### model diagnostics
-  add("## model diagnostics")
+  add("##  model diagnostics")
+  new_line()
   new_line()
   add(list$reporting$diagnostics$intro_DHARMa_text)
   new_line()
@@ -122,7 +151,7 @@ cat(params$model_results_output, sep = "\n")
   new_line()
   add(list$reporting$diagnostics$quantiles_text)
   new_line()
-  add('![DHARMa summary plot](../plots/DHARMa_summary_plot.png){width=80% fig-align="center"}')
+  add('![DHARMa summary plot](../plots/DHARMa_summary_plot.png){width=100% fig-align="center"}')
   new_line()
   
   #render

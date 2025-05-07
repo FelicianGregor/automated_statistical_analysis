@@ -1,13 +1,19 @@
 plotting = function(list, verbose = T){
   if (verbose){cat("entered plotting\n")}
-  #start the "recording" using png (before setting the par)
-  png('./output/plots/plot.png', width = 8, units = "in", height = 5, res = 300)
-
+  
+  #save some parameters needed for plotting:
   #set par(mfrow = c()) to 2 cols and right number of rows depending on data
   list$plot_rows_needed = ceiling(((ncol(list$data_na.omit)-1)/2))
-  if ((ncol(list$data_na.omit)-1) < 1){
+  
+  
+  
+  if ((ncol(list$data_na.omit)-1) <= 1){
+    #start the "recording" using png (before setting the par)
+    png('./output/plots/plot.png', width = 4, units = "in", height = 4, res = 300)
     par(mfrow = c(1,1))
   } else{
+    #start recording with height depending on number of plots
+    png('./output/plots/plot.png', width = 8, units = "in", height = 4*list$plot_rows_needed, res = 300)
     #adjust some par for more space efficient plotting when having more than one rows
     par(mfrow = c(list$plot_rows_needed, 2))
     par(mar = c(4.5, 4, 0.5, 0.5))

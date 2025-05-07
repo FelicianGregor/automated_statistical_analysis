@@ -4,7 +4,7 @@ build_model = function(list, verbose = TRUE){
   
   #build model
   
-  list$model = vglm(list$formula, family = list$dist, data = list$data_na.omit) 
+  list$model = vglm(list$formula, family = list$dist, data = list$data_na.omit, model = TRUE) 
   
   #store model summary: result
   list$model_summary = summary(list$model)

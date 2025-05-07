@@ -1,9 +1,12 @@
 diagnose = function(list, verbose = TRUE){
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ##### DHARMa based diagnostics #####
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
   cat("entered model diagnostics\n")
   source("./scripts/helper_functions.R") #load function from other scripts
-  list$misc$all_integer_response = all(sapply(list$data_na.omit[,1], all_integers)) #sapply to apply function to every cell in col and check if every cell is int with all
-  
+  list$misc$all_integer_response = all(ds4psy::is_wholenumber(list$data_na.omit[,1])) #apply function to every cell in col and check if every cell is integer
   # create DHARMa object: first simulating y from model & predicting y from model
   list$diagn_DHARMa$sim = createDHARMa(simulatedResponse = as.matrix(simulate.vlm(list$model, nsim = 1000)), 
                                        observedResponse = as.vector(list$model@y), 
@@ -38,38 +41,92 @@ diagnose = function(list, verbose = TRUE){
   #list$diagn_DHARMa$quantile_test$p.value # get combined (!) p.value
   if (verbose){cat("testQuantiles() finished\n")}
   
-  # make plot on dharma object: cretaes QQ plot and quantile residuals plot, adding all the tests from above
+  # make plot on dharma object: creates QQ plot and quantile residuals plot, adding all the tests from above
   png("./output/plots/DHARMa_summary_plot.png", width = 10, height = 5, units = "in", res = 400)
   plot(list$diagn_DHARMa$sim)
   dev.off()
   if (verbose){cat("DHARMa plot saved\n")}
   
+  #### some problems do occur with continuos predictors when performing testQuantiles with cont predictor (see plot...)
+  ### also: please clean up the code and make it a bit more readable, less redundant
+  ### and error: The `value` argument of `names<-()` can't be empty as of tibble 3.0.0. and must contain the same length as x
+  
   # make the quantile plots for every predictor, additionally adding the name of the predictor
-  list$misc$pred_names_formula = test[["data_variables"]][2:length(test[["data_variables"]])] #get the predictor variables name without e.g. as.factor()
-  print(list$misc$pred_names_formula)
+  list$misc$pred_names_formula = list[["data_variables"]][2:length(list[["data_variables"]])] #get the predictor variables name without e.g. as.factor()
+  list$misc$pred_names_data_classes = attr(terms(list$model), "dataClasses")[2:length(attr(terms(list$model), "dataClasses"))] # names with as.factor()
   list$diagn_DHARMa$quantile_test_per_pred = list()
   
-  source("./scripts/helper_functions.R") #load helper function to determine whether data needs to get treated in DHARMa as categorical
+  #small tweak: assign with names() the as.a factor version to the real data and use it
+  list$data_na.omit_as_fac_included = list$data_na.omit
+  names(list$data_na.omit_as_fac_included) =  names(list$misc$pred_names_data_classes)
   
-  for (i in list$misc$pred_names_formula) {
+  for (i in names(list$misc$pred_names_data_classes)) {
     # check if categorical or continuous predictor to use proper test function (testQuantile is somehow producing a plot with cat predictor, but no output, seems to be a bug)
     png(paste0("./output/plots/quantile_plot_", i, ".png"), width = 5, height = 5, units = "in", res = 400)
-    list$diagn_DHARMa$quantile_test_per_pred[[i]] <- if (is_fac(list$model)) {
-      testCategorical(list$diagn_DHARMa$sim, catPred = as.factor(list$data_na.omit[[i]])) 
+    list$diagn_DHARMa$quantile_test_per_pred[[i]] <- if (list$misc$pred_names_data_classes[i] == "factor") {
+      testCategorical(list$diagn_DHARMa$sim, catPred = list$data_na.omit_as_fac_included[[i]])
     } else {
-      testQuantiles(list$diagn_DHARMa$sim, predictor = list$data_na.omit[[i]])
+      testQuantiles(list$diagn_DHARMa$sim, predictor = list$list$data_na.omit_as_fac_included[[i]])
     }
     par(xpd = NA) # deactivate border, enable drawing in border
     rect(-1, -1, 11.5, -0.18, col = "white", border = NA) # draw white rectangle on top of xlab
-    title(xlab = if (is_cat(list$data_na.omit[[i]])) paste("categorical predictor", i) else paste("predictor", i, "(rank transformed)")) #add predictor name to label
+    title(xlab = if ((list$misc$pred_names_data_classes[[i]]) == "factor") paste("categorical predictor", i) else paste("predictor", i, "(rank transformed)")) #add predictor name to label
     par(xpd = FALSE) # set border settings back to default = FALSE
     dev.off() #stop recording png file
   }
   
   if (verbose){
     cat("testQuantiles per predictor finished\n")
-    cat("DHARMa residual test finished\n")
+    cat("DHARMa residual tests finished\n")
   }
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #check for collinearity problems:
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  #criterion Dormann 2017: abs value of correlations need to be below 0.7 (0.5-0.7, but I don't want to be that conservative)
+  corr_mat_kendalls = polycor::hetcor(list$model@model[2:ncol(list$model@model)], 
+               use="pairwise.complete.obs", method = "kendall")
+  
+  #extract pred pairs with thao larger than threshold:
+  corr_mat_threshold = 0.7
+  #set diagonal to NA (since cormat is mirrored)
+  diag(corr_mat_kendalls$correlations) = NA
+  corr_mat_kendalls$correlations[lower.tri(corr_mat_kendalls$correlations)] <- NA
+  
+  #save index in corr_mat_kendalls
+  index = which(abs(corr_mat_kendalls$correlations) > corr_mat_threshold, arr.ind = T)
+  
+  #save the corr values as well as the respective pred vars
+  values = round(as.numeric(corr_mat_kendalls$correlations[index]), 2) # round numbers 
+  pred2 = row.names(as.data.frame(corr_mat_kendalls$correlations))[index[, 1]]
+  pred1 = names(as.data.frame(corr_mat_kendalls$correlations))[index[, 2]]
+  
+  # write table
+  corr_critical_res_table = data.frame("pred1" = pred1, 
+                              "pred2" = pred2, 
+                              "Tau" = values)
+  
+  # get number of corr values hiher than abs(0.7)
+  corr_number_critical_tau = nrow(corr_critical_res_table)
+  
+  #save to list:
+  list$diagnostics = list(corr_critical_res_table = corr_critical_res_table, 
+                          corr_mat_kendalls = corr_mat_kendalls, 
+                          corr_mat_threshold = corr_mat_threshold, 
+                          corr_number_critical_tau = corr_number_critical_tau)
+  
+  
+  if (verbose){cat("correlations finished!\n")}
+  
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # variance inflation factor VIF
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  # criterion Dormann 2013: problem with collinearity for VIF>10
+  # cant be computed since the function vif() does not work for vglm(), manually would be time consuming to implement for now, especially with categorical variables (manually make dummy variables)
+  
+  
   return(list)
 }  
   ### to Do DHARMA:
@@ -80,16 +137,8 @@ diagnose = function(list, verbose = TRUE){
   
   # change the way how residuals are calculated
   # - refitting = FALSe (default), which is right, since I dont have a mixed effects model or so
-  # - calculate also the residuals per group: recalculateresiduals(groupingvariable)
+  # - calculate also the residuals per group: recalculate residuals(grouping variable)
   # - transformation for other dist: no, uniform is great!
   # - integer response: I do check this already --> needed? Yes, since I will have to possibility to use lots of dists from vglm!
   # 
   
-  # include: 
-  # - all tests! 
-  # --> outlier test result (report on number of outliers and expected frequency, real frequency)
-  # --> uniformity test result: D value and p.value (add criterion, if I find one)
-  # --> QQ plot
-  # --> dispersion test result: dispersion value and p value
-  # --> results from testQuantile and testCategorical (p values combined)
-  # --> testQuantile plots (per predictor)
