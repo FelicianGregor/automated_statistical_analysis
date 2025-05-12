@@ -101,7 +101,8 @@ plot(stem_dry_mass ~ watershed * elevation * year, data = hbr_maples, las = 1, a
 #install.packages("AER")
 library(AER)
 data("NMES1988")
-test2 = system_function(visits ~ health + age + gender,
+NMES1988$adl = as.factor(NMES1988$adl)
+test2 = system_function(visits ~ health + adl + gender,
                         data = NMES1988, dist = "poissonff", mode = "test")
 
 #last example test

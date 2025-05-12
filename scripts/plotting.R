@@ -475,7 +475,7 @@ plotting = function(list, verbose = T){
       
       # Legend
       legend("right", legend = c(levels_fac2, "preds"), col = c(colors, "orange"), title = fac2,
-             pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.25, 0), bty = "n")
+             pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.4, 0), bty = "n")
       
       #set xpd = FALSE so that i dont draw lines in mar
       par(xpd = FALSE)
@@ -484,7 +484,6 @@ plotting = function(list, verbose = T){
         abline(v = i * length(levels_fac2) + 0.5, col = "black", lty = 2)
       }
     }
-    
     dev.off()
   }
   if(length(factors)==2 & length(cont)==0){
