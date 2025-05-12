@@ -406,142 +406,141 @@ plotting = function(list, verbose = T){
   }
   
   ### if statements just factors: boxplots ####
-  if(length(factors)==3 & length(cont)==0){
+  if(length(factors) == 3 & length(cont) == 0){
     
-    #factor variable names
-    fac1 = factors[1]
-    fac2 = factors[2]
-    fac3 = factors[3]
-    
+    # factor variable names
+    fac1 <- factors[1]
+    fac2 <- factors[2]
+    fac3 <- factors[3]
     
     # levels per variable
-    levels_fac1 = levels(mf[[fac1]])
-    levels_fac2 = levels(mf[[fac2]])
-    levels_fac3 = levels(mf[[fac3]])
+    levels_fac1 <- levels(mf[[fac1]])
+    levels_fac2 <- levels(mf[[fac2]])
+    levels_fac3 <- levels(mf[[fac3]])
     
-    #rows needed and start recording png
-    rows_needed = ceiling(length(levels_fac3)/2)
-    png('./output/plots/plot.png', width = 10, units = "in", height = 4*rows_needed, res = 300)
+    # number of rows needed for plotting
+    rows_needed <- ceiling(length(levels_fac3) / 2)
+    
+    png('./output/plots/plot.png', width = 10, units = "in", height = 4 * rows_needed, res = 300)
     par(mfrow = c(rows_needed, 2))
     
-    #start loop
-    for (level_fac3 in levels_fac3){
+    for (level_fac3 in levels_fac3) {
+      
+      #subset model frame to current fac3 level
+      mf_sub <- mf[mf[[fac3]] == level_fac3, ]
+      
+      # create prediction grid for fac1 and fac2
       grid <- expand.grid(levels_fac2, levels_fac1)
       names(grid) <- c(fac2, fac1)
       
-      # make sure factors are preserved
+      # add current fac3 level to the grid
+      grid[[fac3]] <- factor(level_fac3, levels = levels_fac3)
+      
+      # ensure correct factor levels
       grid[[fac1]] <- factor(grid[[fac1]], levels = levels_fac1)
       grid[[fac2]] <- factor(grid[[fac2]], levels = levels_fac2)
+      grid[[fac3]] <- factor(grid[[fac3]], levels = levels_fac3)
       
-      #add fac3 as pred
-      grid[[fac3]] = rep(as.factor(level_fac3), ncol(grid))
+      # predictions
+      grid$preds <- predict(model, newdata = grid, type = "response")
+      
+      # colors for fac2 levels
+      colors <- rainbow(length(levels_fac2))
+      
+      # create interaction group for boxplot ordering
+      mf_sub$interaction_group <- interaction(mf_sub[[fac1]], mf_sub[[fac2]], sep = "_")
+      grid$interaction_group <- interaction(grid[[fac1]], grid[[fac2]], sep = "_")
+      
+      ordered_groups <- levels(interaction(mf_sub[[fac1]], mf_sub[[fac2]], sep = "_"))
+      
+      # plot
+      par(mar = c(5, 4, 4, 8), xpd = TRUE)
       
       
-      grid$preds = predict(model, newdata = grid, type = "response")
+      boxplot(mf_sub[[responseName(model)]] ~ mf_sub$interaction_group,
+              col = rep(colors, times = length(levels_fac1)),
+              xaxt = "n", xlab = fac1, las = 1,
+              ylim = range(c(mf[[responseName(model)]], grid$preds)),
+              ylab = responseName(model),
+              main = paste(fac3, "=", level_fac3))
       
-      colors = rainbow(length(levels_fac2))
+      # Match prediction order
+      pred_order <- match(ordered_groups, grid$interaction_group)
+      points(1:length(pred_order), grid$preds[pred_order], pch = 16, cex = 2, col = "orange")
       
-      #start plotting:
-      par(mar = c(5, 4, 4, 8), xpd = TRUE)  # Expand right margin
-      
-      #exclude fac3, since I make different plots for the different levels of fac3
-      plot_formula = as.formula(paste0(responseName(model), "~", fac1, "*", fac2))
-      
-      boxplot(plot_formula, data = mf, xaxt = "n", col = colors, 
-              xlab = fac1, las = 1, 
-              main = paste0('plot model with factor "', fac3, '" & level "', level_fac3, '" as reference'))
-      
-      # set custom axis labels — one per fac1 group
-      n_fac2 = length(levels(data[[fac2]]))
-      n_fac1 = length(levels(data[[fac1]]))
-      
-      # compute positions (middle points) per fac1 group
-      group_positions = seq(1, n_fac2 * n_fac1, by = n_fac2) + (n_fac2 - 1) / 2
-      
-      # draw axis: one label per group of fac1 
+      # Axis for fac1 group labels
+      n_fac2 <- length(levels_fac2)
+      group_positions <- seq(1, length(ordered_groups), by = n_fac2) + (n_fac2 - 1) / 2
       axis(1, at = group_positions, labels = levels_fac1)
       
-      # add model preiction
-      points(x = 1:length(grid$preds), y = grid$pred, pch = 16, cex = 3, col = "orange")
+      # Legend
+      legend("right", legend = c(levels_fac2, "preds"), col = c(colors, "orange"), title = fac2,
+             pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.25, 0), bty = "n")
       
-      
-      # legend (placed outside)
-      legend("right", legend = c(levels_fac2, "preds"), col = c(colors, "orange"), title = fac2, 
-             pch = c(rep(15, n_fac2), 16), pt.cex = 2, 
-             inset = c(-0.25, 0), 
-             bty = "n")
-      
-      #set par back:
+      #set xpd = FALSE so that i dont draw lines in mar
       par(xpd = FALSE)
-      
-      # ddd vertical lines to separate groups
-      for (i in 1:(n_fac1 - 1)) {
-        abline(v = i * n_fac2 + 0.5, col = "black", lty = 2)
+      # Add vertical lines
+      for (i in 1:(length(levels_fac1) - 1)) {
+        abline(v = i * length(levels_fac2) + 0.5, col = "black", lty = 2)
       }
-      
     }
-    dev.off()
     
+    dev.off()
   }
   if(length(factors)==2 & length(cont)==0){
     
-    #factor variable names
+    # factor variable names
     fac1 = factors[1]
     fac2 = factors[2]
     
-    # levels per variable
+    #levels per variable
     levels_fac1 = levels(mf[[fac1]])
     levels_fac2 = levels(mf[[fac2]])
     
+    #create grid for predictions
     grid <- expand.grid(levels_fac2, levels_fac1)
     names(grid) <- c(fac2, fac1)
     
-    # make sure factors are preserved
-    grid[[fac1]] <- factor(grid[[fac1]], levels = levels_fac1)
-    grid[[fac2]] <- factor(grid[[fac2]], levels = levels_fac2)
-    
-    
+    # predictions
     grid$preds = predict(model, newdata = grid, type = "response")
     
+    #add colors from rainbow
     colors = rainbow(length(levels_fac2))
     
-    #start plotting:
+    #prepare grouping variable for correct boxplot order
+    mf$interaction_group <- interaction(mf[[fac1]], mf[[fac2]], sep = "_")
+    grid$interaction_group <- interaction(grid[[fac1]], grid[[fac2]], sep = "_")
+    
+    # order boxplot by interaction
+    ordered_groups <- levels(interaction(mf[[fac1]], mf[[fac2]], sep = "_"))
     
     png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
-    par(mar = c(5, 4, 4, 8), xpd = TRUE)  # Expand right margin
+    par(mar = c(5, 4, 4, 8), xpd = TRUE)
     
-    boxplot(formula.vlm(model), data = mf, xaxt = "n", col = colors, 
-            xlab = fac1, las = 1)
+    boxplot(mf[[responseName(model)]] ~ mf$interaction_group, col = rep(colors, times = length(levels_fac1)), 
+            xaxt = "n", xlab = fac1, las = 1, ylim = range(c(mf[[responseName(model)]], grid$preds)), 
+            ylab = responseName(model))
     
-    # set custom axis labels — one per fac1 group
-    n_fac2 = length(levels(data[[fac2]]))
-    n_fac1 = length(levels(data[[fac1]]))
+    #add predictions in correct order
+    pred_order = match(ordered_groups, grid$interaction_group)
+    points(1:length(pred_order), grid$preds[pred_order], pch = 16, cex = 2, col = "orange")
     
-    # compute positions (middle points) per fac1 group
-    group_positions = seq(1, n_fac2 * n_fac1, by = n_fac2) + (n_fac2 - 1) / 2
-    
-    # draw axis: one label per group of fac1 
+    #axis with fac1 group labels at group centers
+    n_fac2 = length(levels_fac2)
+    group_positions = seq(1, length(ordered_groups), by = n_fac2) + (n_fac2 - 1) / 2
     axis(1, at = group_positions, labels = levels_fac1)
     
-    # add model preiction
-    points(x = 1:length(grid$preds), y = grid$pred, pch = 16, cex = 3, col = "orange")
-    
-    
-    # legend (placed outside)
+    # legend
     legend("right", legend = c(levels_fac2, "preds"), col = c(colors, "orange"), title = fac2, 
-           pch = c(rep(15, n_fac2), 16), pt.cex = 2, 
-           inset = c(-0.25, 0), 
-           bty = "n")
+           pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.25, 0), bty = "n")
     
-    #set par back:
     par(xpd = FALSE)
     
-    # add vertical lines to separate groups
-    for (i in 1:(n_fac1 - 1)) {
-      abline(v = i * n_fac2 + 0.5, col = "black", lty = 2)
+    #vertical lines
+    for (i in 1:(length(levels_fac1) - 1)) {
+      abline(v = i * length(levels_fac2) + 0.5, col = "black", lty = 2)
     }
     
-    #stop recording:
     dev.off()
   }
   if (length(factors)==1 & length(cont)==0){
