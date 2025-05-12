@@ -30,7 +30,8 @@ report = function(list, verbose = T){
   }
   
   # collinearity issues in case abs(corr) > 0.7 (Dormann 2017 / 2013):
-  if (list$diagnostics$corr_number_critical_tau > 0){
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){
+    if (length(list$diagnostics$corr_number_critical_tau) > 0){
     list$reporting$input_data_prep$corr_issues_sentence = paste("The following predictors are highly correlated suggesting issues with collinearity among the independent variables. This can lead to variance inflation of your parameter estimates. Below, please find the critical predictors pairs and their respective correlation values (Kendall's Tau). ")
     list$reporting$input_data_prep$corr_table = '```{r}
 #| echo: false
@@ -38,9 +39,11 @@ list = readRDS("list_reporting.RDS")
 print(list$diagnostics$corr_critical_res_table)
 
 ```'
-  } else{
+    } else {
     list$reporting$input_data_prep$corr_issues_sentence = "We did not detect high correlation values (tau > 0.7) among the predictor variables suggesting no variance inflation issues. "
+    }
   }
+  
   
   ##### model result ####
   list$reporting$model_results$intro = "Below you can find the significance values (p values) for each independent variable of your model:"
@@ -102,12 +105,15 @@ print(list$diagnostics$corr_critical_res_table)
   add(list$reporting$input_data_prep$variable_number_issues_sentence)
   new_line()
   new_line()
-  add(list$reporting$input_data_prep$corr_issues_sentence)
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){
+    add(list$reporting$input_data_prep$corr_issues_sentence)
   new_line()
-  if (list$diagnostics$corr_number_critical_tau > 0){
-    add(list$reporting$input_data_prep$corr_table)
-    new_line()
+    if (length(list$diagnostics$corr_number_critical_tau)>0){
+      add(list$reporting$input_data_prep$corr_table)
+      new_line()
+    }
   }
+  
   
   #model results
   new_line()

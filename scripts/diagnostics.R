@@ -84,40 +84,43 @@ diagnose = function(list, verbose = TRUE){
   #check for collinearity problems:
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
-  #criterion Dormann 2017: abs value of correlations need to be below 0.7 (0.5-0.7, but I don't want to be that conservative)
-  corr_mat_kendalls = polycor::hetcor(list$model@model[2:ncol(list$model@model)], 
+  #can just occur if # preds > 1:
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){
+    #criterion Dormann 2017: abs value of correlations need to be below 0.7 (0.5-0.7, but I don't want to be that conservative)
+    corr_mat_kendalls = polycor::hetcor(list$model@model[2:ncol(list$model@model)], 
                use="pairwise.complete.obs", method = "kendall")
   
-  #extract pred pairs with thao larger than threshold:
-  corr_mat_threshold = 0.7
-  #set diagonal to NA (since cormat is mirrored)
-  diag(corr_mat_kendalls$correlations) = NA
-  corr_mat_kendalls$correlations[lower.tri(corr_mat_kendalls$correlations)] <- NA
+    #extract pred pairs with thao larger than threshold:
+    corr_mat_threshold = 0.7
+    #set diagonal to NA (since cormat is mirrored)
+    diag(corr_mat_kendalls$correlations) = NA
+    corr_mat_kendalls$correlations[lower.tri(corr_mat_kendalls$correlations)] <- NA
   
-  #save index in corr_mat_kendalls
-  index = which(abs(corr_mat_kendalls$correlations) > corr_mat_threshold, arr.ind = T)
+    #save index in corr_mat_kendalls
+    index = which(abs(corr_mat_kendalls$correlations) > corr_mat_threshold, arr.ind = T)
   
-  #save the corr values as well as the respective pred vars
-  values = round(as.numeric(corr_mat_kendalls$correlations[index]), 2) # round numbers 
-  pred2 = row.names(as.data.frame(corr_mat_kendalls$correlations))[index[, 1]]
-  pred1 = names(as.data.frame(corr_mat_kendalls$correlations))[index[, 2]]
+    #save the corr values as well as the respective pred vars
+    values = round(as.numeric(corr_mat_kendalls$correlations[index]), 2) # round numbers 
+    pred2 = row.names(as.data.frame(corr_mat_kendalls$correlations))[index[, 1]]
+    pred1 = names(as.data.frame(corr_mat_kendalls$correlations))[index[, 2]]
   
-  # write table
-  corr_critical_res_table = data.frame("pred1" = pred1, 
+    # write table
+    corr_critical_res_table = data.frame("pred1" = pred1, 
                               "pred2" = pred2, 
                               "Tau" = values)
   
-  # get number of corr values hiher than abs(0.7)
-  corr_number_critical_tau = nrow(corr_critical_res_table)
+    # get number of corr values higher than abs (0.7)
+    corr_number_critical_tau = nrow(corr_critical_res_table)
   
-  #save to list:
-  list$diagnostics = list(corr_critical_res_table = corr_critical_res_table, 
+    #save to list:
+    list$diagnostics = list(corr_critical_res_table = corr_critical_res_table, 
                           corr_mat_kendalls = corr_mat_kendalls, 
                           corr_mat_threshold = corr_mat_threshold, 
                           corr_number_critical_tau = corr_number_critical_tau)
+    
+    if (verbose){cat("correlations finished!\n")}
+  }
   
-  
-  if (verbose){cat("correlations finished!\n")}
   
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # variance inflation factor VIF
