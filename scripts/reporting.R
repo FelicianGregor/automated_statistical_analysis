@@ -2,6 +2,7 @@ report = function(list, verbose = T){
   if (verbose){cat("entered reporting\n")}
   
   library(stringr) # for removing pattern ("\n\n") from family character
+  source("./scripts/helper_functions.R") #load header() add() and new_line() function
   #create reporting part in list:
   list$reporting = list()
   
@@ -56,7 +57,12 @@ print(list$diagnostics$corr_critical_res_table)
   
   list$reporting$model_results$summary_output = capture.output(list$model_summary)
   
-  list$reportig$model_results$plots_text_intro = "Please have a look at the plots. Note: Interaction terms (denoted as predictor1:predictor2 in the formula) can not be displayed yet."
+  num_preds = ncol(list$model@model)-1
+  list$reporting$model_results$plots_and_text = if (num_preds>3){
+    "Your model contains more than three predictor variables and is therefore not plotted."
+  } else{
+    'Please have a look at the plots below.\n![plot](../plots/plot.png){width=100% fig-align="center"}'
+  }
   
   # add plots!
   
@@ -136,10 +142,8 @@ cat(params$model_results_output, sep = "\n")
 
 ```')
   new_line()
-  add(list$reportig$model_results$plots_text_intro)
-  new_line()
-  new_line()
-  add('![plot](../plots/plot.png){width=80% fig-align="center"}')
+  add(list$reporting$model_results$plots_and_text)
+  print(list$reporting$model_results$plots_and_text)
   new_line()
   new_line()
   

@@ -102,7 +102,8 @@ plot(stem_dry_mass ~ watershed * elevation * year, data = hbr_maples, las = 1, a
 library(AER)
 data("NMES1988")
 NMES1988$adl = as.factor(NMES1988$adl)
-test2 = system_function(visits ~ health + adl + gender,
+NMES1988$region = as.factor(NMES1988$region)
+test2 = system_function(visits ~ health + adl + gender + region,
                         data = NMES1988, dist = "poissonff", mode = "test")
 
 #last example test
@@ -112,7 +113,6 @@ test3 = system_function(ice_duration ~ year,
 
 ###### to do ######
 # - shapley values as variable importance
-# - 3 add effects in plots (lots of work in case i need to write the code by myself...) --> ggeffects::ggpredict()?
 # - 6 have errors due to poly(x, 2) in formula when plotting in mind
 # - 9 add more information on input data! => comprehensive data checking and report the findings
 # - 11 for small number of observation: add error bars using bootstrapping
