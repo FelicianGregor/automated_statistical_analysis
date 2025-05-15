@@ -41,7 +41,7 @@ system_function = function(formula, data, mode, dist = "uninormal", verbose = TR
     
     #model diagnostics
     source("./scripts/diagnostics.R")
-    #list = diagnose(list, verbose = TRUE)
+    list = diagnose(list, verbose = TRUE)
     
     #### plotting####
     source("./scripts/plotting.R")
