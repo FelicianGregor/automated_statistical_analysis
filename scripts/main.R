@@ -101,7 +101,7 @@ data$am = as.factor(data$am)
 data$vs = as.factor(data$vs)
 data$gear = as.factor(data$gear)
 
-result2 = system_function(formula = qsec ~ vs+mpg+gear, data = data, mode = "test", dist = "uninormal")
+result2 = system_function(formula =  mpg~ hp*qsec*wt, data = data, mode = "test", dist = "uninormal")
 
 
 #### test the function on some data ####

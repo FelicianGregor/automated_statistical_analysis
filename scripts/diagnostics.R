@@ -111,12 +111,6 @@ diagnose = function(list, verbose = TRUE){
   
     # get number of corr values higher than abs (0.7)
     corr_number_critical_tau = nrow(corr_critical_res_table)
-  
-    #save to list:
-    list$diagnostics = list(corr_critical_res_table = corr_critical_res_table, 
-                          corr_mat_kendalls = corr_mat_kendalls, 
-                          corr_mat_threshold = corr_mat_threshold, 
-                          corr_number_critical_tau = corr_number_critical_tau)
     
     if (verbose){cat("correlations finished!\n")}
   }
@@ -128,6 +122,57 @@ diagnose = function(list, verbose = TRUE){
   
   # criterion Dormann 2013: problem with collinearity for VIF>10
   # cant be computed since the function vif() does not work for vglm(), manually would be time consuming to implement for now, especially with categorical variables (manually make dummy variables)
+  
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){
+    terms = names(model.frame(list$model)[2:ncol(model.frame(list$model))])
+    response = names(model.frame(list$model)[1])
+    
+    #initialize storage vecs
+    r2 = rep(NA, length(terms))
+    VIF = rep(NA, length(terms))
+    
+    for (i in 1:length(terms)){
+    
+      #get other preds
+      other_preds = setdiff(terms, terms[i])
+      
+      #create formula for model with terms[i] as response, other vars as preds
+      formula = paste0(terms[i], "~", paste(other_preds, collapse = "+")) 
+      
+      #fit model
+      lin_model = lm(formula, data = as.data.frame(scale(mtcars)))
+    
+      #extract r2
+      r2[i] = summary(lin_model)$r.squared
+    
+      #formula for VIF
+      VIF[i] = 1 / (1 - r2[i])
+    }
+  
+    #store results with var names
+    res = data.frame(VIF)
+    
+    # set threshold to VIF = 10, above = critical, following criterion from Dormann 2013
+    VIF_threshold = 10
+    VIF_values  = data.frame(terms = terms, res)
+    VIF_critical_terms = VIF_values[which(res> VIF_threshold),]
+  }
+  
+  
+  #save whole Collinearity stuff (corr and VIF) to list:
+  
+  list$diagnostics = list( # first the corr results
+                          corr_critical_res_table = corr_critical_res_table, 
+                          corr_mat_kendalls = corr_mat_kendalls, 
+                          corr_mat_threshold = corr_mat_threshold, 
+                          corr_number_critical_tau = corr_number_critical_tau, 
+                          
+                          #now the VIF results
+                          VIF_threshold = VIF_threshold, 
+                          VIF_values = VIF_values, 
+                          VIF_critical_terms= VIF_critical_terms)
+  
+  
   
   
   return(list)
