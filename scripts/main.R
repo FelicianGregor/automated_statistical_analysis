@@ -41,7 +41,7 @@ system_function = function(formula, data, mode, dist = "uninormal", verbose = TR
     
     #model diagnostics
     source("./scripts/diagnostics.R")
-    list = diagnose(list, verbose = TRUE)
+    #list = diagnose(list, verbose = TRUE)
     
     #### plotting####
     source("./scripts/plotting.R")
@@ -52,6 +52,26 @@ system_function = function(formula, data, mode, dist = "uninormal", verbose = TR
     report(list, verbose = TRUE)
 
   } else if (mode == "predict"){
+    
+    #prepare data
+    source("./scripts/data_preparation.R")
+    list = prepare_data(formula, data, mode, list = list, dist = dist, verbose = TRUE)
+    
+    # build model
+    source("./scripts/model_fitting.R")
+    list = build_model(list, verbose = TRUE)
+    
+    #model diagnostics
+    source("./scripts/diagnostics.R")
+    list = diagnose(list, verbose = TRUE)
+    
+    #### plotting####
+    source("./scripts/plotting.R")
+    list = plotting(list, verbose = TRUE)
+    
+    # reporting
+    source("./scripts/reporting.R")
+    report(list, verbose = TRUE)
     
   } else if (mode == "explore"){
     
@@ -69,10 +89,20 @@ library(VGAM)
 library(ds4psy) # for is_wholenumber()
 library(polycor) # for hetcor() --> continuous, polychoric / polyserial correlations
 data = knz_bison
-data$animal_sex = as.factor(data$animal_sex)
+knz_bison$rec_month = as.factor(data$rec_month)
+knz_bison$animal_sex = as.factor(data$animal_sex)
 knz_bison$age = knz_bison$rec_year - knz_bison$animal_yob
 
-result = system_function(formula = animal_weight ~ age * animal_sex, data = knz_bison, mode = "test", dist = "poissonff")
+result = system_function(formula = animal_weight ~ animal_sex*age, data = knz_bison, mode = "test", dist = "uninormal")
+
+# two cat, one cont:
+data = mtcars
+data$am = as.factor(data$am)
+data$vs = as.factor(data$vs)
+data$gear = as.factor(data$gear)
+
+result2 = system_function(formula = qsec ~ vs+mpg+gear, data = data, mode = "test", dist = "uninormal")
+
 
 #### test the function on some data ####
 library(lterdatasampler) # data freely available, credits to https://lter.github.io/lterdatasampler/reference/and_vertebrates.html
@@ -94,7 +124,7 @@ summary(hbr_maples)
 test = system_function(formula = stem_dry_mass ~ watershed * year, data = hbr_maples, mode = "test", dist = uninormal())
 # better reporting of DHARMa results!
 # explanation of the model summary printed
-plot(stem_dry_mass ~ watershed * elevation * year, data = hbr_maples, las = 1, alpha = 0.8, ask = F)
+plot(stem_dry_mass ~ watershed * elevation, data = hbr_maples, las = 1, alpha = 0.8, ask = F)
 
 
 # another test:
@@ -108,12 +138,12 @@ test2 = system_function(visits ~ health + adl + gender + region,
 
 #last example test
 data("ntl_icecover")
-test3 = system_function(ice_duration ~ year,
+test3 = system_function(ice_duration ~ poly(year, 2),
                         data = ntl_icecover, dist = "uninormal", mode = "test")
 
 ###### to do ######
 # - shapley values as variable importance
-# - 6 have errors due to poly(x, 2) in formula when plotting in mind
+# - 6 fix errors due to poly(x, 2) (error start with other data type...)
 # - 9 add more information on input data! => comprehensive data checking and report the findings
 # - 11 for small number of observation: add error bars using bootstrapping
 # - Mit options(warn=2) kann man R zwingen, alle Warnungen in Fehlermeldungen umzuwandeln, bei warn=-1 werden sie alle ignoriert: siehe ?options unter warn.

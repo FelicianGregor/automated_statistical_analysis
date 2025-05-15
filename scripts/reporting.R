@@ -143,7 +143,6 @@ cat(params$model_results_output, sep = "\n")
 ```')
   new_line()
   add(list$reporting$model_results$plots_and_text)
-  print(list$reporting$model_results$plots_and_text)
   new_line()
   new_line()
   

@@ -6,12 +6,13 @@ plotting = function(list, verbose = T){
   data = list$model@model
   model = list$model
   
-  #get the model frame
-  mf <- model.frame(list$model)
+  # start preps for plotting, getting the variables
+  mf = model.frame(model)
+  
   
   # get the variables:
   terms = terms(model)
-  preds = attr(terms, "term.labels") #all variables with interactions (denoted with ":")
+  preds = attr(terms, "term.labels") #all variables with interactions (denoted with :)
   
   # differentiate between interactions and no interactions:
   if (length(grep(":", preds)>0)){
@@ -24,12 +25,11 @@ plotting = function(list, verbose = T){
   
   #determine the classes:
   data_classes = attr(terms, "dataClasses")
-  data_classes_simple = data_classes[preds_simple] #without interactions, just taking the normal terms
+  data_classes_simple = data_classes[preds_simple] #without interactions
   
   #split in cont and fac preds
   cont = names(which(data_classes_simple=="numeric"))
   factors = names(which(data_classes_simple=="factor" | data_classes_simple=="ordered" | data_classes_simple == "character"))
-  if(verbose){cat(print(factors), "\n")}
   
   # what cant get displayed yet:
   if (length(factors)>3){
@@ -56,25 +56,30 @@ plotting = function(list, verbose = T){
     levels_col_vec = levels(mf[[fac1]])
     levels_plot_vec = levels(mf[[fac2]]) 
     
-    plot_rows_needed = ceiling((length(levels_plot_vec)-1)/2)
-    
-    if (plot_rows_needed < 1){
-      #start the "recording" using png (before setting the par)
-      png('./output/plots/plot.png', width = 4, units = "in", height = 4, res = 300)
-      par(mfrow = c(1,1))
-    } else {
-      #start recording with height depending on number of plots
-      png('./output/plots/plot.png', width = 8, units = "in", height = 4*plot_rows_needed, res = 300)
-      #adjust some par for more space efficient plotting when having more than one rows
-      par(mfrow = c(plot_rows_needed, 2))
-      par(mar = c(4.5, 4, 2, 2))
-      par(tcl = 0.5) # axis ticks inside the window
-      par(mgp = c(2.5, 0.5, 0)) # move axis title etc. closer
-      par(las = 1) #turn ticks
+    plot_rows_needed = ceiling((length(levels_plot_vec))/2) 
+    if (plot_rows_needed == 0){
+      plot_rows_needed = 1
     }
+    
+    #set par depending on number of plots and rows needed
+      if (plot_rows_needed == 1){
+        #start the "recording" using png (before setting the par)
+        png('./output/plots/plot.png', width = 8, units = "in", height = 4, res = 300)
+        par(mfrow = c(1,2))
+      } else {
+        #start recording with height depending on number of plots
+        png('./output/plots/plot.png', width = 8, units = "in", height = 4*plot_rows_needed, res = 300)
+        #adjust some par for more space efficient plotting when having more than one rows
+        par(mfrow = c(plot_rows_needed, 2))
+        par(mar = c(4.5, 4, 2, 2))
+        par(tcl = 0.5) # axis ticks inside the window
+        par(mgp = c(2.5, 0.5, 0)) # move axis title etc. closer
+        par(las = 1) #turn ticks
+      }
     
     
     for (level_plot in levels_plot_vec){
+      
       #add empty plot to have comparable plot windows
       #original data:
       response_full = model@model[,1]
@@ -88,13 +93,15 @@ plotting = function(list, verbose = T){
            xlim = x_lim_range, ylim = y_lim_range, 
            main = paste0("model predictions with ",fac2, ": ",  level_plot), 
            pch = 16, las = 1)
-      grid(col = "lightgrey")
+      
+      grid(col = "lightgrey") # add grid
       
       #add legend and create colors wit length of number of levels
       colors <- rainbow(length(levels_col_vec))
       legend("topleft", legend = levels_col_vec, col = colors, 
              pch = rep(16, 2), lty = rep(1, 2), 
-             title = fac1)
+             title = fac1, 
+             cex = 0.7)
       
       #set counter for colors
       counter = 0
@@ -108,8 +115,13 @@ plotting = function(list, verbose = T){
         #set names according to variable cat predictor name
         names(new_data) = c(cont, fac1, fac2)
         
-        #predict
-        preds = predict(model, newdata = new_data, type = "response")
+        #predict on link scale
+        preds = predict(model, newdata = new_data,  se.fit = T )
+        
+        # backtransform
+        fit = model@family@linkinv(preds$fitted.values, extra = model@extra)
+        upper_CI = model@family@linkinv(preds$fitted.values + 1.96*preds$se.fit , extra = model@extra)
+        lower_CI = model@family@linkinv(preds$fitted.values - 1.96*preds$se.fit , extra = model@extra)
         
         #plot
         
@@ -121,15 +133,16 @@ plotting = function(list, verbose = T){
         points(cat_predictor_treat, cat_response_treat, pch = 16, las = 1, col = colors[counter])
         
         #add lines
-        lines(cont_new, preds, lwd = 2, col = colors[counter])
+        lines(cont_new, fit, lwd = 2, col = colors[counter])
+        lines(cont_new, upper_CI, lwd = 0.7, lty = 2, col = colors[counter])
+        lines(cont_new, lower_CI, lwd = 0.7, lty = 2, col = colors[counter])
       }
     }
-    
     #stop reporting
     dev.off()
     par(mfrow = c(1, 1), mar = c(5, 4, 4, 2)) # set par() back
     
-  }
+  } # done CI!
   if (length(factors) == 1 & length(cont)== 1){
     
     # make scatterplot for cont pred & cont response, color  = pred cat1
@@ -143,14 +156,7 @@ plotting = function(list, verbose = T){
     cont_new = seq(min(model@model[cont]), max(model@model[cont]), length = 10000)
     
     # categorical variable one level:
-    
     levels_col_vec = levels(mf[[fac1]])
-    
-    if (is.null(levels_col_vec)){
-      levels_col_vec = unique(mf[[fac1]])
-    }
-    
-    print(paste("problem, if NULL: ", levels_col_vec))
     
     #add empty plot to have comparable plot windows
     #original data:
@@ -160,6 +166,10 @@ plotting = function(list, verbose = T){
     #start recording
     png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
     
+    #set par and expand margin on the right side for legend
+    # enable writing in the margin
+    par(mar = c(5, 4, 4, 8), xpd = TRUE)
+    
     #range to add empty plotting window
     x_lim_range = range(cont_pred_full)
     y_lim_range = range(response_full)
@@ -168,13 +178,17 @@ plotting = function(list, verbose = T){
          xlim = x_lim_range, ylim = y_lim_range, 
          main = paste0("model predictions depending on ", cont, " & ", fac1), 
          pch = 16, las = 1)
-    grid(col = "lightgrey")
     
     #add legend and create colors wit length of number of levels
     colors <- rainbow(length(levels_col_vec))
-    legend("topleft", legend = levels_col_vec, col = colors, 
+    legend("right", legend = levels_col_vec, col = colors, 
            pch = rep(16, 2), lty = rep(1, 2), 
-           title = fac1)
+           title = fac1, 
+           inset = c(-0.3, 0), bty = "n")
+    
+    par(xpd = FALSE) # set expand back to default FALSE, so that drawing in margins is disabled
+    
+    grid(col = "lightgrey") # add grid 
     
     #set counter for colors
     counter = 0
@@ -186,10 +200,14 @@ plotting = function(list, verbose = T){
       
       #set names according to variable cat predictor name
       names(new_data) = c(cont, fac1)
-      print(names(new_data))
       
       #predict
-      preds = predict(model, newdata = new_data, type = "response")
+      preds = predict(model, newdata = new_data, se.fit = T)
+      
+      # back transform to response scale and compute CI's
+      fit = model@family@linkinv(preds$fitted.values, extra = model@extra)
+      upper_CI = model@family@linkinv(preds$fitted.values + 1.96*preds$se.fit , extra = model@extra)
+      lower_CI = model@family@linkinv(preds$fitted.values - 1.96*preds$se.fit , extra = model@extra)
       
       #plot
       
@@ -203,12 +221,13 @@ plotting = function(list, verbose = T){
       points(cat_predictor_treat, cat_response_treat, pch = 16, las = 1, col = colors[counter])
       
       #add lines
-      lines(cont_new, preds, lwd = 2, col = colors[counter])
-      
+      lines(cont_new, fit, lwd = 2, col = colors[counter])
+      lines(cont_new, upper_CI, lwd = 0.7, lty = 2, col = colors[counter])
+      lines(cont_new, lower_CI, lwd = 0.7, lty = 2, col = colors[counter])
     }
     # stop plot recording
     dev.off()
-  }
+  } # done CI!
   if (length(cont)==1 & length(factors)==0){
     cont_x = cont[1]
     
@@ -218,12 +237,17 @@ plotting = function(list, verbose = T){
     names(new_data) = c(cont_x)
     
     #make prediction
-    preds = predict(model, newdata = new_data, response = T)
+    preds = predict(model, newdata = new_data, se.fit = T)
     print(head(preds))
     
     #plot
     x = model@model[[cont_x]]
     y = model@y
+    
+    # back transform to response scale and compute CI's
+    fit = model@family@linkinv(preds$fitted.values, extra = model@extra)
+    upper_CI = model@family@linkinv(preds$fitted.values + 1.96*preds$se.fit , extra = model@extra)
+    lower_CI = model@family@linkinv(preds$fitted.values - 1.96*preds$se.fit , extra = model@extra)
     
     #start recording
     png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
@@ -234,15 +258,15 @@ plotting = function(list, verbose = T){
          col = "grey",
          pch = 16, 
          las = 1)
-    lines(cont_x_seq, preds[,1], lwd = 2, col = "red")
-    #lines(cont_x_seq, preds$se.fit[,1] + 1.96*preds$se.fit[,2], lwd = 2, col = "pink", lty = 2)
-    #lines(cont_x_seq, preds$se.fit[,1] - 1.96*preds$se.fit[,2], lwd = 2, col = "pink", lty = 2)
+    lines(cont_x_seq, fit, lwd = 2, col = "red")
+    lines(cont_x_seq, upper_CI, lwd = 2, col = "pink", lty = 2)
+    lines(cont_x_seq, lower_CI, lwd = 2, col = "pink", lty = 2)
     
     #stop recording:
     dev.off()
-  }
+  } # done CI!
   
-  ### if statements more than two cont: contour / heatmap ####
+  ### if statements more 2 cont: contour / heatmap ####
   if (length(cont)==3 & length(factors)== 0){
     #heatplot with contours for cont1 & cont2 with z being response, cont3 is made discrete through quantile and plotted to three distinct contourplots
     
@@ -284,7 +308,7 @@ plotting = function(list, verbose = T){
       
       
       # plotting
-      image(cont_x_seq, cont_y_seq, z, cex.lab = 1.5,
+      image(cont_x_seq, cont_y_seq, z, cex.lab = 1.5, 
             ylab = paste(cont_y), xlab = paste(cont_x),
             col = heat.colors(30), 
             main = paste0("response ",responseName(model), " with ", quantiles[i]*100, "th quant. value ", cont_quant_values[i], " of varible ", cont_quant))
@@ -298,7 +322,7 @@ plotting = function(list, verbose = T){
     #stop recording
     dev.off()
     par(mfrow = c(1,1))
-  }
+  } # no CI's
   if (length(cont)==2 & length(factors)==0){
     # one contourplot produced (cont1 against cont2 and z = response)
     
@@ -346,7 +370,7 @@ plotting = function(list, verbose = T){
     
     #stop recording
     dev.off()
-  }
+  } # no CI's
   if (length(cont)==2 & length(factors)==1){
     # contourplot / heatmap for cont1 & cont2 (z being response), for each level of cat1 new conturplot
     #(make the same as for 3 cont vars, where the factor are the quantiles)
@@ -363,7 +387,11 @@ plotting = function(list, verbose = T){
     cat1_levels = levels(data[[cat1]]) # get the levels of cat1
     
     #rows needed:
-    rows_needed = ceiling(length(cat1_levels)/2)
+    rows_needed <- ceiling(length(levels_fac3) / 2)
+    if (rows_needed == 0){
+      rows_needed = 1 # set 1 nrwo to minim, otherwise an error occurs
+    }
+    
     png('./output/plots/plot.png', width = 10, units = "in", height = 4*rows_needed, res = 300)
     par(mfrow = c(rows_needed, 2))
     for (i in 1:length(cat1_levels)){
@@ -403,7 +431,7 @@ plotting = function(list, verbose = T){
     #stop recording
     dev.off()
     
-  }
+  } # no CI's
   
   ### if statements just factors: boxplots ####
   if(length(factors) == 3 & length(cont) == 0){
@@ -420,6 +448,9 @@ plotting = function(list, verbose = T){
     
     # number of rows needed for plotting
     rows_needed <- ceiling(length(levels_fac3) / 2)
+    if (rows_needed == 0){
+      rows_needed = 1 # set 1 nrwo to minim, otherwise an error occurs
+    }
     
     png('./output/plots/plot.png', width = 10, units = "in", height = 4 * rows_needed, res = 300)
     par(mfrow = c(rows_needed, 2))
@@ -442,7 +473,15 @@ plotting = function(list, verbose = T){
       grid[[fac3]] <- factor(grid[[fac3]], levels = levels_fac3)
       
       # predictions
-      grid$preds <- predict(model, newdata = grid, type = "response")
+      # predictions
+      #grid$preds = predict(model, newdata = grid, type = "link", se.fit = T)$fit # glm version
+      grid$preds = predict(model, newdata = grid, type = "link", se.fit = T)$fitted.values
+      grid$preds_se = predict(model, newdata = grid, type = "link", se.fit = T)$se.fit
+      
+      #backtransform to response scale
+      grid$fit_response = model@family@linkinv(grid$preds, extra = model@extra)
+      grid$upper_CI = model@family@linkinv(grid$preds + 1.96 * grid$preds_se, extra = model@extra)
+      grid$lower_CI = model@family@linkinv(grid$preds - 1.96 * grid$preds_se, extra = model@extra)
       
       # colors for fac2 levels
       colors <- rainbow(length(levels_fac2))
@@ -460,13 +499,23 @@ plotting = function(list, verbose = T){
       boxplot(mf_sub[[responseName(model)]] ~ mf_sub$interaction_group,
               col = rep(colors, times = length(levels_fac1)),
               xaxt = "n", xlab = fac1, las = 1,
-              ylim = range(c(mf[[responseName(model)]], grid$preds)),
+              ylim = range(c(mf[[responseName(model)]], grid$upper_CI, grid$lower_CI)),
               ylab = responseName(model),
               main = paste(fac3, "=", level_fac3))
       
       # Match prediction order
       pred_order <- match(ordered_groups, grid$interaction_group)
-      points(1:length(pred_order), grid$preds[pred_order], pch = 16, cex = 2, col = "orange")
+      points(1:length(pred_order), grid$fit_response[pred_order], pch = 16, cex = 2, col = "orange")
+      #points(1:length(pred_order), grid$upper_CI[pred_order], pch = "_", cex = 2, col = "orange")
+      #points(1:length(pred_order), grid$lower_CI[pred_order], pch = "_", cex = 2, col = "orange")
+      
+      #connect lower and upper CI's to make brackets
+      segments(x0 = 1:length(pred_order), 
+               x1 = 1:length(pred_order),
+               y0 = grid$lower_CI[pred_order], 
+               y1 = grid$upper_CI[pred_order], 
+               col = "orange", lwd = 2)
+      
       
       # Axis for fac1 group labels
       n_fac2 <- length(levels_fac2)
@@ -474,8 +523,14 @@ plotting = function(list, verbose = T){
       axis(1, at = group_positions, labels = levels_fac1)
       
       # Legend
-      legend("right", legend = c(levels_fac2, "preds"), col = c(colors, "orange"), title = fac2,
-             pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.4, 0), bty = "n")
+      legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
+             pch = c(rep(15, length(colors)), NA), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
+      
+      # plot legend again
+      legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
+             pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
+      legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
+             pch = c(rep(NA, length(colors)), "|"), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
       
       #set xpd = FALSE so that i dont draw lines in mar
       par(xpd = FALSE)
@@ -484,8 +539,9 @@ plotting = function(list, verbose = T){
         abline(v = i * length(levels_fac2) + 0.5, col = "black", lty = 2)
       }
     }
+    
     dev.off()
-  }
+  } # CIs done
   if(length(factors)==2 & length(cont)==0){
     
     # factor variable names
@@ -501,7 +557,15 @@ plotting = function(list, verbose = T){
     names(grid) <- c(fac2, fac1)
     
     # predictions
-    grid$preds = predict(model, newdata = grid, type = "response")
+    grid$preds = predict(model, newdata = grid, type = "link", se.fit = T)$fitted.values
+    grid$preds_se = predict(model, newdata = grid, type = "link", se.fit = T)$se.fit
+    
+    #backtransform to response scale
+    grid$fit_response = model@family@linkinv(grid$preds, extra = model@extra)
+    grid$upper_CI = model@family@linkinv(grid$preds + 1.96 * grid$preds_se, extra = model@extra)
+    grid$lower_CI = model@family@linkinv(grid$preds - 1.96 * grid$preds_se, extra = model@extra)
+    
+    #grid$preds = predict(model, newdata = grid, type = "link", se.fit = T)
     
     #add colors from rainbow
     colors = rainbow(length(levels_fac2))
@@ -517,12 +581,18 @@ plotting = function(list, verbose = T){
     par(mar = c(5, 4, 4, 8), xpd = TRUE)
     
     boxplot(mf[[responseName(model)]] ~ mf$interaction_group, col = rep(colors, times = length(levels_fac1)), 
-            xaxt = "n", xlab = fac1, las = 1, ylim = range(c(mf[[responseName(model)]], grid$preds)), 
+            xaxt = "n", xlab = fac1, las = 1, ylim = range(c(mf[[responseName(model)]], grid$upper_CI, grid$lower_CI)), 
             ylab = responseName(model))
     
     #add predictions in correct order
     pred_order = match(ordered_groups, grid$interaction_group)
-    points(1:length(pred_order), grid$preds[pred_order], pch = 16, cex = 2, col = "orange")
+    points(1:length(pred_order), grid$fit_response[pred_order], pch = 16, cex = 2, col = "orange")
+    
+    segments(x0 = 1:length(pred_order), 
+             x1 = 1:length(pred_order),
+             y0 = grid$lower_CI[pred_order], 
+             y1 = grid$upper_CI[pred_order], 
+             col = "orange", lwd = 3)
     
     #axis with fac1 group labels at group centers
     n_fac2 = length(levels_fac2)
@@ -530,8 +600,16 @@ plotting = function(list, verbose = T){
     axis(1, at = group_positions, labels = levels_fac1)
     
     # legend
-    legend("right", legend = c(levels_fac2, "preds"), col = c(colors, "orange"), title = fac2, 
-           pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.25, 0), bty = "n")
+    legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
+           pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
+    
+    #tweak to get the CI vertical line on top of the pch 16 symbol: plot opaque legend again, but with changed symbol to pch = "|"
+    legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
+           pch = c(rep(15, length(colors)), NA), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
+    
+    #tweak to get the CI vertical line on top of the pch 16 symbol: plot opaque legend again, but with changed symbol to pch = "|"
+    legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
+           pch = c(rep(NA, length(colors)), "|"), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
     
     par(xpd = FALSE)
     
@@ -541,7 +619,7 @@ plotting = function(list, verbose = T){
     }
     
     dev.off()
-  }
+  } # CI's done!
   if (length(factors)==1 & length(cont)==0){
     
     #factor variable names
@@ -554,7 +632,12 @@ plotting = function(list, verbose = T){
     names(grid) = c(fac1)
     grid
     
-    grid$preds = predict(model, newdata = grid, type = "response")
+    preds = predict(model, newdata = grid, type = "link", se.fit = T)
+    
+    #back transform from link to response scale
+    preds_response = model@family@linkinv(preds$fitted.values, extra = model@extra)
+    upper_CI_response = model@family@linkinv(preds$fitted.values + 1.96 * preds$se.fit, extra = model@extra)
+    lower_CI_response = model@family@linkinv(preds$fitted.values - 1.96 * preds$se.fit, extra = model@extra)
     
     colors = rainbow(length(levels_fac1))
     
@@ -566,12 +649,26 @@ plotting = function(list, verbose = T){
             main = paste("predictions for every level of", fac1))
     
     # add model preiction
-    points(x = 1:length(grid$preds), y = grid$pred, pch = 16, cex = 3, col = "orange")
+    points(x = 1:length(preds_response), y = preds_response, pch = 16, cex = 2, col = "orange")
+    #points(x = 1:length(preds_response), y = upper_CI_response, pch = "_", cex = 2, col = "orange")
+    #points(x = 1:length(preds_response), y = lower_CI_response, pch = "_", cex = 2, col = "orange")
+    
+    # add brackets (connect upper and lower with vertical line)
+    segments(x0 = 1:length(preds_response), 
+             x1 = 1:length(preds_response),
+             y0 = lower_CI_response, 
+             y1 = upper_CI_response, 
+             col = "orange", lwd = 3)
     
     # legend (placed outside)
-    legend("right", legend = c("preds"), col = c("orange"), title = "legend", 
-           pch = c(16), pt.cex = 2, 
-           inset = c(-0.25, 0), 
+    legend("right", legend = c("preds &\n95% CI"), col = c("orange"), title = "legend", 
+           pch = "|", pt.cex = 2, 
+           inset = c(-0.35, 0), 
+           bty = "n")
+    
+    legend("right", c("preds &\n95% CI"), col = c("orange"), title = "legend", 
+           pch = 16, pt.cex = 2,
+           inset = c(-0.35, 0), 
            bty = "n")
     
     #stop recording
@@ -582,10 +679,7 @@ plotting = function(list, verbose = T){
     par(mar = c(5.1, 4.1, 4.1, 2.1)) 
     
     
-  } 
-  
-
-  if (verbose){cat("plotting done\n")}
+  } # CI's done!
   
   return(list)
 }
