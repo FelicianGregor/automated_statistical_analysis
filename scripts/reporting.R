@@ -31,9 +31,9 @@ report = function(list, verbose = T){
   }
   
   # collinearity issues in case abs(corr) > 0.7 (Dormann 2017 / 2013):
-  if (ncol(list$model@model[2:ncol(list$model@model)])>1){
-    if (length(list$diagnostics$corr_number_critical_tau) > 0){
-    list$reporting$input_data_prep$corr_issues_sentence = paste("The following predictors are highly correlated suggesting issues with collinearity among the independent variables. This can lead to variance inflation of your parameter estimates. Below, please find the critical predictors pairs and their respective correlation values (Kendall's Tau). ")
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){ # just in case there are more than one predictor variables
+    if (list$diagnostics$corr_number_critical_tau > 0){
+    list$reporting$input_data_prep$corr_issues_sentence = paste("The following predictors are highly correlated suggesting issues with collinearity among the independent variables. This can lead to variance inflation (high standard errors) of your parameter estimates. Below, please find the critical predictors pairs and their respective correlation values (Kendall's Tau). ")
     list$reporting$input_data_prep$corr_table = '```{r}
 #| echo: false
 list = readRDS("list_reporting.RDS")
@@ -41,10 +41,31 @@ print(list$diagnostics$corr_critical_res_table)
 
 ```'
     } else {
-    list$reporting$input_data_prep$corr_issues_sentence = "We did not detect high correlation values (tau > 0.7) among the predictor variables suggesting no variance inflation issues. "
+    list$reporting$input_data_prep$corr_issues_sentence = "We did not detect high correlation values (tau > 0.7) among the predictor variables. "
     }
   }
   
+  # collinearity issues in case VIF > 10 (Dormann 2017 / 2013)
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){ # just in case there are more than one predictor variables
+    if (nrow(list$diagnostics$VIF_critical_terms) > 0){
+    list$reporting$input_data_prep$VIF_issues_sentence = paste("The following predictors have variance inflation factors (VIF) higher than 10 suggesting issues with collinearity among the predictors. This can lead to variance inflation (high standard errors) of your parameter estimates. Below, please find the predictors and their respective VIF values. ")
+    list$reporting$input_data_prep$VIF_table = '```{r}
+#| echo: false
+list = readRDS("list_reporting.RDS")
+print(list$diagnostics$VIF_critical_terms)
+
+```'
+    } else {
+    list$reporting$input_data_prep$VIF_issues_sentence = "There are no high variance inflation factors (VIF > 10) among the predictor variables. "
+    }
+  }
+  
+  # if both corr and VIF are not critical: print a sentance that nothing critical was found
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){ # just in case there are more than one predictor variable
+    if (nrow(list$diagnostics$VIF_critical_terms) == 0 & list$diagnostics$corr_number_critical_tau == 0){
+      list$reporting$input_data_prep$collinearity_issues_sentence = "This suggests that the model does not have any problems with collinearity.  "
+    }
+  }
   
   ##### model result ####
   list$reporting$model_results$intro = "Below you can find the significance values (p values) for each independent variable of your model:"
@@ -114,11 +135,26 @@ print(list$diagnostics$corr_critical_res_table)
   if (ncol(list$model@model[2:ncol(list$model@model)])>1){
     add(list$reporting$input_data_prep$corr_issues_sentence)
   new_line()
-    if (length(list$diagnostics$corr_number_critical_tau)>0){
+    if (list$diagnostics$corr_number_critical_tau>0){
       add(list$reporting$input_data_prep$corr_table)
       new_line()
     }
   }
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){
+    add(list$reporting$input_data_prep$VIF_issues_sentence)
+    new_line()
+    if (nrow(list$diagnostics$VIF_critical_terms)>0){
+      add(list$reporting$input_data_prep$VIF_table)
+      new_line()
+    }
+  }
+  if (ncol(list$model@model[2:ncol(list$model@model)])>1){ # just in case there are more than one predictor variable
+    if (nrow(list$diagnostics$VIF_critical_terms) == 0 & list$diagnostics$corr_number_critical_tau == 0){
+      add(list$reporting$input_data_prep$collinearity_issues_sentence)
+      new_line()
+    }
+  }
+  
   
   
   #model results

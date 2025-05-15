@@ -140,7 +140,7 @@ diagnose = function(list, verbose = TRUE){
       formula = paste0(terms[i], "~", paste(other_preds, collapse = "+")) 
       
       #fit model
-      lin_model = lm(formula, data = as.data.frame(scale(mtcars)))
+      lin_model = lm(formula, data = as.data.frame(list$model@model))
     
       #extract r2
       r2[i] = summary(lin_model)$r.squared

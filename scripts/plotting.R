@@ -357,7 +357,8 @@ plotting = function(list, verbose = T){
     #make plot
     image(cont_x_seq, cont_y_seq, z, cex.lab = 1.5,
           ylab = paste(cont_y), xlab = paste(cont_x),
-          col = heat.colors(30))
+          col = heat.colors(30), 
+          main = paste("response", responseName(model), "depending on", cont_y, "&", cont_x))
     #add grid
     grid(col = "lightgrey")
     #add contours
@@ -524,13 +525,13 @@ plotting = function(list, verbose = T){
       
       # Legend
       legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
-             pch = c(rep(15, length(colors)), NA), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
+             pch = c(rep(15, length(colors)), NA), pt.cex = 2, inset = c(-0.5, 0), bty = "n")
       
       # plot legend again
       legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
-             pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
+             pch = c(rep(15, length(colors)), 16), pt.cex = 2, inset = c(-0.5, 0), bty = "n")
       legend("right", legend = c(levels_fac2, "preds &\n95% CI"), col = c(colors, "orange"), title = fac2, 
-             pch = c(rep(NA, length(colors)), "|"), pt.cex = 2, inset = c(-0.3, 0), bty = "n")
+             pch = c(rep(NA, length(colors)), "|"), pt.cex = 2, inset = c(-0.5, 0), bty = "n")
       
       #set xpd = FALSE so that i dont draw lines in mar
       par(xpd = FALSE)

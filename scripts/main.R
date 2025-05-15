@@ -63,7 +63,7 @@ system_function = function(formula, data, mode, dist = "uninormal", verbose = TR
     
     #model diagnostics
     source("./scripts/diagnostics.R")
-    list = diagnose(list, verbose = TRUE)
+    #list = diagnose(list, verbose = TRUE)
     
     #### plotting####
     source("./scripts/plotting.R")
@@ -88,6 +88,9 @@ library(DHARMa)
 library(VGAM)
 library(ds4psy) # for is_wholenumber()
 library(polycor) # for hetcor() --> continuous, polychoric / polyserial correlations
+library(shapviz) # for shapley values (in script model_fitting)
+library(ggplot2) # for visualizing shapley values (script model_fitting)
+library(ggthemes) # for making shapley values pretty (script model_fitting)
 data = knz_bison
 knz_bison$rec_month = as.factor(data$rec_month)
 knz_bison$animal_sex = as.factor(data$animal_sex)
@@ -101,7 +104,7 @@ data$am = as.factor(data$am)
 data$vs = as.factor(data$vs)
 data$gear = as.factor(data$gear)
 
-result2 = system_function(formula =  mpg~ hp*qsec*wt, data = data, mode = "test", dist = "uninormal")
+result2 = system_function(formula =  mpg~ hp*qsec, data = data, mode = "test", dist = "uninormal")
 
 
 #### test the function on some data ####
@@ -112,6 +115,7 @@ data("hbr_maples")
 #inspect briefly
 head(hbr_maples) # I'm interested in the relationship of watershed (treatment with calcium or not) and stem_dry_mass (representing productivity)
 hbr_maples$year = as.factor(hbr_maples$year)
+hbr_maples$watershed = as.factor(hbr_maples$watershed)
 summary(hbr_maples)
 # also, elevation could have a strong influence on growth, so include the variable and possible interactions
 # assumed relation: stem_dry_mass ~ watershed + elevation
@@ -133,7 +137,9 @@ library(AER)
 data("NMES1988")
 NMES1988$adl = as.factor(NMES1988$adl)
 NMES1988$region = as.factor(NMES1988$region)
-test2 = system_function(visits ~ health + adl + gender + region,
+NMES1988$health = as.factor(NMES1988$health)
+
+test2 = system_function(visits ~ health + adl + gender,
                         data = NMES1988, dist = "poissonff", mode = "test")
 
 #last example test
