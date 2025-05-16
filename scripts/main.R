@@ -144,8 +144,9 @@ test2 = system_function(visits ~ health + adl + gender,
 
 #last example test
 data("ntl_icecover")
-test3 = system_function(ice_duration ~ poly(year, 2),
-                        data = ntl_icecover, dist = "uninormal", mode = "test")
+
+test3 = system_function(ice_duration ~ year,
+                        data = ntl_icecover, dist = "uninormal", mode = "test", verbose = T)
 
 ###### to do ######
 # - shapley values as variable importance

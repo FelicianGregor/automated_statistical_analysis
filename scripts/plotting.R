@@ -238,7 +238,6 @@ plotting = function(list, verbose = T){
     
     #make prediction
     preds = predict(model, newdata = new_data, se.fit = T)
-    print(head(preds))
     
     #plot
     x = model@model[[cont_x]]

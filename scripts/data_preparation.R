@@ -21,7 +21,7 @@ prepare_data = function(formula, data, mode, list = list, dist, verbose = TRUE){
   
   # number of data points per variable
   
-  #skewness of data
+  # skewness of data
   
   if (verbose){
     cat(list$data_na.omitted_number_text) # print out to console

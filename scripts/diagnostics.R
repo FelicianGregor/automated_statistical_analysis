@@ -156,10 +156,9 @@ diagnose = function(list, verbose = TRUE){
     VIF_threshold = 10
     VIF_values  = data.frame(terms = terms, res)
     VIF_critical_terms = VIF_values[which(res> VIF_threshold),]
-  }
-  
-  
-  #save whole Collinearity stuff (corr and VIF) to list:
+    
+    
+    #save whole Collinearity stuff (corr and VIF) to list:
   
   list$diagnostics = list( # first the corr results
                           corr_critical_res_table = corr_critical_res_table, 
@@ -172,9 +171,7 @@ diagnose = function(list, verbose = TRUE){
                           VIF_values = VIF_values, 
                           VIF_critical_terms= VIF_critical_terms)
   
-  
-  
-  
+  }
   return(list)
 }  
   ### to Do DHARMA:

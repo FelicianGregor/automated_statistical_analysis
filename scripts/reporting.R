@@ -85,23 +85,27 @@ print(list$diagnostics$VIF_critical_terms)
     'Please have a look at the plots below.\n![plot](../plots/plot.png){width=100% fig-align="center"}'
   }
   
-  # add plots!
+  #add plot for variable importance: shapley values:
+  if (num_preds>1){
+    list$reporting$model_results$shapley_plot_and_text = 'For determining the importance of specific independent variables on the predictions of your model, shapley values were computed and are visualized in the barplot below.\n![shapley values](../plots/shapley_values_barplot.png){width=50% height=50% fig-align="center"} '
+  }
+  
   
   ##### model diagnostics ####
   list$reporting$diagnostics$intro_DHARMa_text = paste('Please check the model diagnostics carefully to make sure the inferences made are valid!',
                                                        'For model diagnostics a simulation based approach with scaled (quantile) residuals from the `DHARMa`-package is used. These residuals can be interpreted intuitively in the same way as residuals from linear regression models. For more information please read [the introduction by Florian Hartig](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html).')
   list$reporting$diagnostics$outlier_text = ifelse(list$diagn_DHARMa$outlier_test$p.value < 0.05, 
-                                            paste("**DHARMa detected significantly more ouliers than usual!**"),
-                                            "The DHARMa outlier test did not detect any problematic data points.")
+                                            paste("**DHARMa detected significantly more ouliers than usual!** "),
+                                            "The DHARMa outlier test did not detect an unusual high number of outliers. ")
   list$reporting$diagnostics$dispersion_text = ifelse(list$diagn_DHARMa$dispersion_test$p.value < 0.05, 
-                                                      "**DHARMa detected over / underdispersion issues.**", 
-                                                      "DHARMa did not detect dispersion issues.") 
+                                                      "**DHARMa detected over / underdispersion issues.** ", 
+                                                      "DHARMa did not detect dispersion issues. ") 
   list$reporting$diagnostics$uniformity_text = ifelse(list$diagn_DHARMa$uniformity_test$p.value < 0.05, 
-                                                      "**DHARMa detected significant deviations from residual uniformity.**", 
-                                                      "DHARMa did not detect suspicious deviations from residual uniformity.")
+                                                      "**DHARMa detected significant deviations from residual uniformity.** ", 
+                                                      "DHARMa did not detect suspicious deviations from residual uniformity. ")
   list$reporting$diagnostics$quantiles_text = ifelse(list$diagn_DHARMa$quantile_test$p.value < 0.05, 
-                                                    "**DHARMa detected significant quantile deviations from the expected values.**", 
-                                                    "DHARMa did not find suspicious deviations of the quantiles from th expected values.")
+                                                    "**DHARMa detected significant quantile deviations from the expected values.** ", 
+                                                    "DHARMa did not find suspicious deviations of the quantiles from th expected values. ")
   
   ##### conclusion ####
   
@@ -181,6 +185,11 @@ cat(params$model_results_output, sep = "\n")
   add(list$reporting$model_results$plots_and_text)
   new_line()
   new_line()
+  if (num_preds>1){
+    add(list$reporting$model_results$shapley_plot_and_text)
+    new_line()
+    new_line()
+  }
   
   ### model diagnostics
   add("##  model diagnostics")
@@ -188,13 +197,18 @@ cat(params$model_results_output, sep = "\n")
   new_line()
   add(list$reporting$diagnostics$intro_DHARMa_text)
   new_line()
+  new_line()
   add(list$reporting$diagnostics$outlier_text)
+  new_line()
   new_line()
   add(list$reporting$diagnostics$dispersion_text)
   new_line()
+  new_line()
   add(list$reporting$diagnostics$uniformity_text)
   new_line()
+  new_line()
   add(list$reporting$diagnostics$quantiles_text)
+  new_line()
   new_line()
   add('![DHARMa summary plot](../plots/DHARMa_summary_plot.png){width=100% fig-align="center"}')
   new_line()
