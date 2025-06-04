@@ -99,7 +99,7 @@ knz_bison$age = knz_bison$rec_year - knz_bison$animal_yob
 result = system_function(formula = animal_weight ~ animal_sex*age, data = knz_bison, mode = "test", dist = "uninormal")
 
 # two cat, one cont:
-data = mtcars
+data(mtcars)
 data$am = as.factor(data$am)
 data$vs = as.factor(data$vs)
 data$gear = as.factor(data$gear)
@@ -139,8 +139,9 @@ NMES1988$adl = as.factor(NMES1988$adl)
 NMES1988$region = as.factor(NMES1988$region)
 NMES1988$health = as.factor(NMES1988$health)
 
-test2 = system_function(visits ~ health + adl + gender,
-                        data = NMES1988, dist = "poissonff", mode = "test")
+
+test2 = system_function(visits ~ health + adl + gender + age,
+                        data = NMES1988, dist = "uninormal", mode = "test", verbose = T)
 
 #last example test
 data("ntl_icecover")

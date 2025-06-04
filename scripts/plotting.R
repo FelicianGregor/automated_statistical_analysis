@@ -23,6 +23,10 @@ plotting = function(list, verbose = T){
     preds_inter = 0
   }
   
+  if (length(preds_simple)>3){
+    preds_simple = list$shapley_values$highest_shap_max_three
+  }
+  
   #determine the classes:
   data_classes = attr(terms, "dataClasses")
   data_classes_simple = data_classes[preds_simple] #without interactions
@@ -33,11 +37,11 @@ plotting = function(list, verbose = T){
   
   # what cant get displayed yet:
   if (length(factors)>3){
-    cat("models with more than three factors can't get displayed yet!")}
+    cat("models with more than three factors can't get displayed yet! Instead, the three variables with highest shapley values will be used.\n")}
   if (length(cont)>3 & length(factors)==0){
-    cat("models with more than three continuous variables can't get displayed!")}
+    cat("models with more than three continuous variables can't get displayed! Instead, the three variables with highest shapley values will be used.\n")}
   if((length(cont)==3 + length(factors)) > 3){
-    cat("models with more than three predictors in total can't get displayed yet!")}
+    cat("models with more than three predictors in total can't get displayed yet! Instead, the three variables with highest shapley values will be used.\n")}
   
   # if statements cont & cat facet plots####
   if (length(factors) == 2 & length(cont)== 1){
@@ -300,6 +304,8 @@ plotting = function(list, verbose = T){
                    
                    #set the names
                    names(new_data) = c(cont_x, cont_y, cont_quant)
+                   
+                   # add median for other variables
                    
                    #call the actual predict function 
                    predict(model, newdata = new_data, type = "response")

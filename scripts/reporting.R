@@ -68,11 +68,10 @@ print(list$diagnostics$VIF_critical_terms)
   }
   
   ##### model result ####
-  list$reporting$model_results$intro = "Below you can find the significance values (p values) for each independent variable of your model:"
-  list$reporting$model_results$significance_output = capture.output(list$model_significance)
+  list$reporting$model_results$intro = "Below you can find the significance values slopes along with the 95% confidence intervals (CI) on the link and response scale as for each independent variable of your model. The asterisk denotes significant (Bonferroni-corrected P-value < 0.05) slopes."
+  list$reporting$model_results$significance_output = capture.output(list$model_slopes_CI_significance)
   
-  list$reporting$model_results$model_significance_explanation = "If the p-value of the variable is smaller than 0.05 (denoted with one to three stars in the model summary below) 
-                    this indicates that the null hypothesis (H0) should be rejected and thus, your alternative hypothesis (H1 / Ha) 
+  list$reporting$model_results$model_significance_explanation = "If the parameter estimate is marked as significant with an esterisk, his indicates that the null hypothesis (H0) should be rejected and thus, your alternative hypothesis (H1 / Ha) 
                     is assumed to hold until more data becomes available and could reject the null hypothesis.
                     Below, the full model summary is provided for further details:"
   
@@ -80,7 +79,7 @@ print(list$diagnostics$VIF_critical_terms)
   
   num_preds = ncol(list$model@model)-1
   list$reporting$model_results$plots_and_text = if (num_preds>3){
-    "Your model contains more than three predictor variables and is therefore not plotted."
+    "Your model contains more than three predictor variables. Therefore, we used only the three predictor variables with highest variable importance (mean absolute shapley value) for producing the graphics. "
   } else{
     'Please have a look at the plots below.\n![plot](../plots/plot.png){width=100% fig-align="center"}'
   }

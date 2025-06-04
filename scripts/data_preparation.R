@@ -14,7 +14,7 @@ prepare_data = function(formula, data, mode, list = list, dist, verbose = TRUE){
   
   #check the data for NA's
   list$data_na.omit = na.omit(list$raw_data) #delete all rows with NA values
-  list$data_na.omitted_number = length(list$raw_data) - length(list$data_na.omit)
+  list$data_na.omitted_number = nrow(list$raw_data) - nrow(list$data_na.omit)
   list$data_na.omitted_number_text = paste(list$data_na.omitted_number, "NA's omitted\n")
   
   # check the data for strong correlations between predictor variables 

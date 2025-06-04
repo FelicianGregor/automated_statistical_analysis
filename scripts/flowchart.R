@@ -7,7 +7,7 @@ library(DiagrammeRsvg)
 
 #create a flowchart of the planned bachelor thesis project, depicting the main stages of the system
 
-### without test data on data box
+### hypothesis testing:
 flowchart = grViz("
 digraph decision_tree {
   node [shape=box, style=filled, fillcolor=white]
@@ -15,15 +15,80 @@ digraph decision_tree {
  Start [shape=box, label=<
     <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='0'>
       <TR><TD><B>user input:</B></TD></TR>
-      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; define x and y variable in data set</FONT></TD></TR>
-      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; define distribution family</FONT></TD></TR>
+      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; mode: hypothesis testing</FONT></TD></TR>
+      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; define mathematical hypothesis</FONT></TD></TR>
+      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; define distribution</FONT></TD></TR>
+    </TABLE>
+  >];
+
+  Preprocess [shape=box, label=<
+    <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='0'>
+      <TR><TD><B>data preparation:</B></TD></TR>
+      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; missing values</FONT></TD></TR>
+      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; number of data points</FONT></TD></TR>
+      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; </FONT><FONT COLOR='red' POINT-SIZE='10'>skewness - transformation</FONT></TD></TR>
+    </TABLE>
+  >]  
+  
+  // New Node
+  A [label='fit GLM']
+  B [label='model diagnostics']
+  B [shape=box, label=<
+    <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='0'>
+      <TR><TD>model diagnostics</TD></TR>
+      <TR><TD><FONT POINT-SIZE='10'>(using quantile residuals)</FONT></TD></TR>
+    </TABLE>
+  >]
+  C [shape=box, label=<
+    <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='0'>
+      <TR><TD>reporting</TD></TR>
+    </TABLE>
+  >]
+  
+  D [label = 'model visualization']
+  
+  
+
+  // Adjusted connections
+  Start -> Preprocess  
+  Preprocess -> A []
+  A -> B [label='', tailport=s, headport=n]
+  B -> D
+  D -> C
+}
+")
+
+
+# hussle for saving in high resolution:
+library(htmlwidgets)
+library(webshot)
+
+# Save as HTML widget
+saveWidget(flowchart, "./flowchart.html", selfcontained = TRUE)
+
+# Convert HTML to PNG using webshot
+webshot("./flowchart.html", file = "./flowchart.png", vwidth = 500, vheight = 1000, delay = 0.5, zoom  = 2)
+
+
+
+
+###### version with prediction loop:
+flowchart = grViz("
+digraph decision_tree {
+  node [shape=box, style=filled, fillcolor=white]
+
+ Start [shape=box, label=<
+    <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='0'>
+      <TR><TD><B>user input:</B></TD></TR>
+      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; define mathematical hypothesis</FONT></TD></TR>
+      <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; define distribution</FONT></TD></TR>
       <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; hypothesis testing / prediction</FONT><FONT COLOR='grey' POINT-SIZE='10'>/ data exploration</FONT></TD></TR>
     </TABLE>
   >];
 
   Preprocess [shape=box, label=<
     <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='0'>
-      <TR><TD><B>data checking:</B></TD></TR>
+      <TR><TD><B>data preparation:</B></TD></TR>
       <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; missing values</FONT></TD></TR>
       <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; correlation among predictor variables</FONT></TD></TR>
       <TR><TD ALIGN='LEFT'><FONT POINT-SIZE='10'>&#8226; number of data points</FONT></TD></TR>
@@ -32,12 +97,12 @@ digraph decision_tree {
   >]  
   
   // New Node
-  A [label='define & fit (V)GLM']
-  B [label='model diagnostics (DHARMa) OK?']
+  A [label='fit GLM']
+  B [label='model diagnostics']
   B [shape=box, label=<
     <TABLE BORDER='0' CELLBORDER='0' CELLSPACING='0'>
-      <TR><TD>model diagnostics OK?</TD></TR>
-      <TR><TD><FONT POINT-SIZE='10'>(using the DHARMa-package)</FONT></TD></TR>
+      <TR><TD>model diagnostics</TD></TR>
+      <TR><TD><FONT POINT-SIZE='10'>(using quantile residuals)</FONT></TD></TR>
     </TABLE>
   >]
   C [label='adjust model']
