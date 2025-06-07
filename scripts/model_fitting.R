@@ -3,7 +3,7 @@ build_model = function(list, verbose = TRUE){
   library(VGAM)
   
   #build model
-  list$model = vglm(list$formula, family = list$dist, data = list$data_na.omit, model = TRUE) 
+  list$model = vglm(list$formula, family = list$dist, data = list$data_na.omit, model = FALSE) 
   
   #store model summary: result
   list$model_summary = summary(list$model)
@@ -26,23 +26,20 @@ build_model = function(list, verbose = TRUE){
   
   # access slope and backtransform (if link scale != response scale)
   slope_link = list$model_summary@coef3[,1][-c(intercept_locs)] 
-  slope_response = linkinv(as.data.frame(slope_link), extra = list$model@extra)
+  slope_link = round(slope_link, 2)
   
   ### CI's ### for reporting, following Nakagawa 2007
   # calculate CI on link scale
   upper_CI_link = slope_link + 1.96*list$model_summary@coef3[,2][-c(intercept_locs)]
   lower_CI_link = slope_link - 1.96*list$model_summary@coef3[,2][-c(intercept_locs)]
   
-  # calculate CI on response scale
-  upper_CI_response = linkinv(as.data.frame(upper_CI_link), extra = list$model@extra)
-  lower_CI_response = linkinv(as.data.frame(lower_CI_link), extra = list$model@extra)
+  #round 2 decimal places
+  upper_CI_link = round(upper_CI_link, 2)
+  lower_CI_link = round(lower_CI_link, 2)
   
   # make it pretty and store
-  res = data.frame(significance, slope_link, upper_CI_link, lower_CI_link, upper_CI_response, lower_CI_response) # put values together into a data.frame
-  var_names = rownames(res) # store rownames to reassign them later 
-  res = as.data.frame(apply(res[, -1], MARGIN = 2, FUN = function(x) round(as.numeric(x), 2)), significance) #round data to 2 decimal places
-  rownames(res) = var_names #reassign the rownames
-  list$model_slopes_CI_significance = data.frame(res, significance)
+  res = data.frame(slope_link, upper_CI_link, lower_CI_link, significance) # put values together into a data.frame
+  list$model_slopes_CI_significance = res
   
   
   if (verbose){
@@ -58,10 +55,10 @@ build_model = function(list, verbose = TRUE){
     }
     
     #make data ready for computing shapley values
-    x_data = as.data.frame(list$model@model[,-1]) # exclude y 
-    names(x_data) = names(model.framevlm(list$model))[-1]
-  
-    y_data = as.data.frame(scale(list$model@model[, 1])) # get just y and scale it....?
+    vars = all.vars(list$model@misc$formula)[-1] # get just variable names without poly and y etc.
+    x_data = as.data.frame(list$data_na.omit[,c(vars)]) # get origial variable names and data, rescale it!
+    
+    y_data = as.data.frame(scale(list$model@model[, 1])) # get just y and scale it?
     
     
     #prediction wrapper specifying how to obtain the predicted values from vglm objects
@@ -75,6 +72,8 @@ build_model = function(list, verbose = TRUE){
         predictvglm(object, newdata=newdata)[,1]
       }
     }
+    
+    print("start to explain")
 
   
     #compute values

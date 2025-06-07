@@ -6,7 +6,27 @@ diagnose = function(list, verbose = TRUE){
   
   cat("entered model diagnostics\n")
   source("./scripts/helper_functions.R") #load function from other scripts
-  list$misc$all_integer_response = all(ds4psy::is_wholenumber(list$data_na.omit[,1])) #apply function to every cell in col and check if every cell is integer
+  
+  #check if integer response var or not, to set argument in createDHARMa
+  #try <- try(birds[,responseName(fm)], silent = TRUE) # in case of an error, enters first if statement below and check for binomial data
+  #if (inherits(try, "try-error")) {
+  #  if ((grep("inomial", fm@family@blurb[1]))) {list$misc$all_integer_response = TRUE}
+  #  else{stop("response variable name was not found in the data\nYou probably specified a multinomial or other model with integer response variables")}
+  #} else {
+  #  list$misc$all_integer_response = all(ds4psy::is_wholenumber(birds[,responseName(fm)])) #apply function to every cell in col and check if every cell is integer
+  #}
+  list$misc$all_integer_response = all(ds4psy::is_wholenumber(birds[,responseName(fm)])) #apply function to every cell in col and check if every cell is integer
+  
+  #debugging for binomial
+  print("y var:")
+  print(list$model@y)
+  
+  print("simulatedResponse:")
+  print(dim(as.matrix(simulate.vlm(list$model, nsim = 1000))))
+  
+  print("fittedPredictedResponse")
+  print(dim(as.vector(predictvglm(list$model, type = "response"))))
+  
   # create DHARMa object: first simulating y from model & predicting y from model
   list$diagn_DHARMa$sim = createDHARMa(simulatedResponse = as.matrix(simulate.vlm(list$model, nsim = 1000)), 
                                        observedResponse = as.vector(list$model@y), 
@@ -85,16 +105,21 @@ diagnose = function(list, verbose = TRUE){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   #can just occur if # preds > 1:
-  if (ncol(list$model@model[2:ncol(list$model@model)])>1){
+  vars = all.vars(list$model@misc$formula)[-1] # get names of vars, exclude y
+  vars_number = length(vars) # number of vars
+  
+  if (vars_number>1){
+    if (verbose){cat("\nentered correlation analysis\n")}
+    
     #criterion Dormann 2017: abs value of correlations need to be below 0.7 (0.5-0.7, but I don't want to be that conservative)
-    corr_mat_kendalls = polycor::hetcor(list$model@model[2:ncol(list$model@model)], 
+    corr_mat_kendalls = polycor::hetcor(list$data_na.omit[, vars], 
                use="pairwise.complete.obs", method = "kendall")
   
     #extract pred pairs with thao larger than threshold:
     corr_mat_threshold = 0.7
     #set diagonal to NA (since cormat is mirrored)
     diag(corr_mat_kendalls$correlations) = NA
-    corr_mat_kendalls$correlations[lower.tri(corr_mat_kendalls$correlations)] <- NA
+    corr_mat_kendalls$correlations[lower.tri(corr_mat_kendalls$correlations)] =  NA
   
     #save index in corr_mat_kendalls
     index = which(abs(corr_mat_kendalls$correlations) > corr_mat_threshold, arr.ind = T)
@@ -123,15 +148,15 @@ diagnose = function(list, verbose = TRUE){
   # criterion Dormann 2013: problem with collinearity for VIF>10
   # cant be computed since the function vif() does not work for vglm(), manually would be time consuming to implement for now, especially with categorical variables (manually make dummy variables)
   
-  if (ncol(list$model@model[2:ncol(list$model@model)])>1){
-    terms = names(model.frame(list$model)[2:ncol(model.frame(list$model))])
-    response = names(model.frame(list$model)[1])
+  if (vars_number>1){
+    terms = all.vars(list$model@misc$formula)[-1]
+    response = all.vars(list$model@misc$formula)[1]
     
     #initialize storage vecs
     r2 = rep(NA, length(terms))
     VIF = rep(NA, length(terms))
     
-    for (i in 1:length(terms)){
+    for (i in seq_along(terms)){
     
       #get other preds
       other_preds = setdiff(terms, terms[i])
@@ -140,7 +165,7 @@ diagnose = function(list, verbose = TRUE){
       formula = paste0(terms[i], "~", paste(other_preds, collapse = "+")) 
       
       #fit model
-      lin_model = lm(formula, data = as.data.frame(list$model@model))
+      lin_model = lm(formula, data = list$data_na.omit)
     
       #extract r2
       r2[i] = summary(lin_model)$r.squared

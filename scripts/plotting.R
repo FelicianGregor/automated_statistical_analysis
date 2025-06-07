@@ -1,39 +1,32 @@
 plotting = function(list, verbose = T){
   if (verbose){cat("entered plotting\n")}
 
-  
   #store data first
-  data = list$model@model
+  data = list$data_na.omit # contains names such as poly()1 and interactions, important for predict etc
   model = list$model
+  data_na.omit = list$data_na.omit # just plain variable names (as in input data) and respective data
   
-  # start preps for plotting, getting the variables
-  mf = model.frame(model)
+  # get the vars names
+  vars = all.vars(model@misc$formula)[-1]
+  print(vars)
   
-  
-  # get the variables:
-  terms = terms(model)
-  preds = attr(terms, "term.labels") #all variables with interactions (denoted with :)
-  
-  # differentiate between interactions and no interactions:
-  if (length(grep(":", preds)>0)){
-    preds_simple = preds[-grep(":", preds)]
-    preds_inter = setdiff(preds, preds_simple) # get the other variables
-  } else{
-    preds_simple = preds
-    preds_inter = 0
-  }
-  
-  if (length(preds_simple)>3){
-    preds_simple = list$shapley_values$highest_shap_max_three
-  }
-  
-  #determine the classes:
-  data_classes = attr(terms, "dataClasses")
-  data_classes_simple = data_classes[preds_simple] #without interactions
+  # get the respective class:
+  data_classes = sapply(data_na.omit[,vars, drop = FALSE], FUN = class)
+  print("these are the data classes")
+  print(data_classes)
   
   #split in cont and fac preds
-  cont = names(which(data_classes_simple=="numeric"))
-  factors = names(which(data_classes_simple=="factor" | data_classes_simple=="ordered" | data_classes_simple == "character"))
+  cont = names(which(data_classes=="numeric" | data_classes == "integer"))
+  factors = names(which(data_classes=="factor" | data_classes=="ordered" | data_classes == "character"))
+  print("print out factors")
+  print(factors)
+  
+  if (verbose){
+    cat("these are the cont:\n")
+    cat(cont)
+    cat("\nthese are the factors:\n")
+    cat(factors)
+  }
   
   # what cant get displayed yet:
   if (length(factors)>3){
@@ -54,11 +47,11 @@ plotting = function(list, verbose = T){
     #create new values for prediction
     
     # continuous
-    cont_new = seq(min(model@model[cont]), max(model@model[cont]), length = 10000)
+    cont_new = seq(min(data_na.omit[cont]), max(data_na.omit[cont]), length = 10000)
     
     # categorical variable one level:
-    levels_col_vec = levels(mf[[fac1]])
-    levels_plot_vec = levels(mf[[fac2]]) 
+    levels_col_vec = levels(data_na.omit[[fac1]])
+    levels_plot_vec = levels(data_na.omit[[fac2]]) 
     
     plot_rows_needed = ceiling((length(levels_plot_vec))/2) 
     if (plot_rows_needed == 0){
@@ -86,8 +79,8 @@ plotting = function(list, verbose = T){
       
       #add empty plot to have comparable plot windows
       #original data:
-      response_full = model@model[,1]
-      cont_pred_full = model@model[[cont]]
+      response_full = data_na.omit[, responseName(model)]
+      cont_pred_full = data_na.omit[[cont]]
       
       #range to add empty plotting window
       x_lim_range = range(cont_pred_full)
@@ -96,14 +89,14 @@ plotting = function(list, verbose = T){
            xlab = cont, ylab = responseName(model), 
            xlim = x_lim_range, ylim = y_lim_range, 
            main = paste0("model predictions with ",fac2, ": ",  level_plot), 
-           pch = 16, las = 1)
+           pch = 1, las = 1)
       
       grid(col = "lightgrey") # add grid
       
       #add legend and create colors wit length of number of levels
       colors <- rainbow(length(levels_col_vec))
       legend("topleft", legend = levels_col_vec, col = colors, 
-             pch = rep(16, 2), lty = rep(1, 2), 
+             pch = rep(1, 2), lty = rep(1, 2), 
              title = fac1, 
              cex = 0.7)
       
@@ -130,24 +123,41 @@ plotting = function(list, verbose = T){
         #plot
         
         #just subset of data for cat preds
-        cat_predictor_treat = cont_pred_full[which(model@model[[fac2]]==level_plot & model@model[[fac1]]==level)]
-        cat_response_treat = response_full[which(model@model[[fac2]]==level_plot & model@model[[fac1]]==level)]
+        cat_predictor_treat = cont_pred_full[which(data_na.omit[[fac2]]==level_plot & data_na.omit[[fac1]]==level)]
+        cat_response_treat = response_full[which(data_na.omit[[fac2]]==level_plot & data_na.omit[[fac1]]==level)]
         
         # add the data points
-        points(cat_predictor_treat, cat_response_treat, pch = 16, las = 1, col = colors[counter])
+        points(cat_predictor_treat, cat_response_treat, pch = 1, las = 1, col = colors[counter], cex = 0.5)
+        #if (ncol(data_na.omit)>100){
+        #  points(cat_predictor_treat, cat_response_treat, pch = 1, las = 1, col = colors[counter], cex = 0.5)
+        #}else {
+        #  points(cat_predictor_treat, cat_response_treat, pch = ".", las = 1, col = colors[counter])
+        #}
+        
+        # make cont_new to same range as points.
+        val = which(cont_new >= min(cat_predictor_treat) & cont_new <= max(cat_predictor_treat))
+        
+        # Subset all using the same index
+        cont_new_range = cont_new[val]
+        fit_range = fit[val]
+        upper_CI_range = upper_CI[val]
+        lower_CI_range = lower_CI[val]
+        
         
         #add lines
-        lines(cont_new, fit, lwd = 2, col = colors[counter])
-        lines(cont_new, upper_CI, lwd = 0.7, lty = 2, col = colors[counter])
-        lines(cont_new, lower_CI, lwd = 0.7, lty = 2, col = colors[counter])
+        lines(cont_new_range, fit_range, lwd = 2, col = colors[counter])
+        lines(cont_new_range, upper_CI_range, lwd = 0.7, lty = 2, col = colors[counter])
+        lines(cont_new_range, lower_CI_range, lwd = 0.7, lty = 2, col = colors[counter])
       }
     }
     #stop reporting
     dev.off()
     par(mfrow = c(1, 1), mar = c(5, 4, 4, 2)) # set par() back
     
-  } # done CI!
+  } # poly done
   if (length(factors) == 1 & length(cont)== 1){
+    
+    if (verbose){cat("\nentered plotting: 1 cat & 1 cont\n")}
     
     # make scatterplot for cont pred & cont response, color  = pred cat1
     
@@ -157,15 +167,15 @@ plotting = function(list, verbose = T){
     #create new values for prediction
     
     # continuous
-    cont_new = seq(min(model@model[cont]), max(model@model[cont]), length = 10000)
+    cont_new = seq(min(data_na.omit[cont]), max(data_na.omit[cont]), length = 10000)
     
     # categorical variable one level:
-    levels_col_vec = levels(mf[[fac1]])
+    levels_col_vec = levels(data_na.omit[[fac1]])
     
     #add empty plot to have comparable plot windows
     #original data:
-    response_full = model@model[,1]
-    cont_pred_full = model@model[[cont]]
+    response_full = data_na.omit[,responseName(model)]
+    cont_pred_full = data_na.omit[[cont]]
     
     #start recording
     png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
@@ -216,27 +226,36 @@ plotting = function(list, verbose = T){
       #plot
       
       #just subset of data for cat preds
-      cat_predictor_treat = cont_pred_full[model@model[[fac1]]==level]
-      cat_response_treat = response_full[model@model[[fac1]]==level]
+      cat_predictor_treat = cont_pred_full[data_na.omit[[fac1]]==level]
+      cat_response_treat = response_full[data_na.omit[[fac1]]==level]
       
-      length(cat_response_treat)
       
       # add the data points
       points(cat_predictor_treat, cat_response_treat, pch = 16, las = 1, col = colors[counter])
       
+      # make cont_new to same range as points.
+      val = which(cont_new >= min(cat_predictor_treat) & cont_new <= max(cat_predictor_treat))
+      
+      # Subset all using the same index
+      cont_new_range = cont_new[val]
+      fit_range = fit[val]
+      upper_CI_range = upper_CI[val]
+      lower_CI_range = lower_CI[val]
+      
+
       #add lines
-      lines(cont_new, fit, lwd = 2, col = colors[counter])
-      lines(cont_new, upper_CI, lwd = 0.7, lty = 2, col = colors[counter])
-      lines(cont_new, lower_CI, lwd = 0.7, lty = 2, col = colors[counter])
+      lines(cont_new_range, fit_range, lwd = 2, col = colors[counter])
+      lines(cont_new_range, upper_CI_range, lwd = 0.7, lty = 2, col = colors[counter])
+      lines(cont_new_range, lower_CI_range, lwd = 0.7, lty = 2, col = colors[counter])
     }
     # stop plot recording
     dev.off()
-  } # done CI!
+  } # poly done
   if (length(cont)==1 & length(factors)==0){
     cont_x = cont[1]
     
     #make prediction sequence for both cont pred variables
-    cont_x_seq <- seq(min(data[[cont_x]]), max(data[[cont_x]]), length = 1000)
+    cont_x_seq <- seq(min(data_na.omit[[cont_x]]), max(data_na.omit[[cont_x]]), length = 1000)
     new_data = data.frame(dummy_cont_x = cont_x_seq)
     names(new_data) = c(cont_x)
     
@@ -244,7 +263,7 @@ plotting = function(list, verbose = T){
     preds = predict(model, newdata = new_data, se.fit = T)
     
     #plot
-    x = model@model[[cont_x]]
+    x = data_na.omit[[cont_x]]
     y = model@y
     
     # back transform to response scale and compute CI's
@@ -267,7 +286,7 @@ plotting = function(list, verbose = T){
     
     #stop recording:
     dev.off()
-  } # done CI!
+  } # 
   
   ### if statements more 2 cont: contour / heatmap ####
   if (length(cont)==3 & length(factors)== 0){
@@ -278,11 +297,11 @@ plotting = function(list, verbose = T){
     cont_y = cont[2]
     cont_quant = cont[3]
     
-    cont_x_seq <- seq(min(data[[cont_x]]), max(data[[cont_x]]), length = 30)
-    cont_y_seq <- seq(min(data[[cont_y]]), max(data[[cont_y]]), length = 30)
+    cont_x_seq <- seq(min(data_na.omit[[cont_x]]), max(data_na.omit[[cont_x]]), length = 30)
+    cont_y_seq <- seq(min(data_na.omit[[cont_y]]), max(data_na.omit[[cont_y]]), length = 30)
     
     quantiles = c(0.25, 0.5, 0.75)
-    cont_quant_values = quantile(data[[cont_quant]], probs = quantiles, na.rm = T) # make quantiles for visualization
+    cont_quant_values = quantile(data_na.omit[[cont_quant]], probs = quantiles, na.rm = T) # make quantiles for visualization
     
     #save plots
     # since 3 quantiles are used: 3 rows
@@ -319,15 +338,15 @@ plotting = function(list, verbose = T){
             main = paste0("response ",responseName(model), " with ", quantiles[i]*100, "th quant. value ", cont_quant_values[i], " of varible ", cont_quant))
       grid(col = "lightgrey")
       contour(cont_x_seq, cont_y_seq, z, add=T)
-      points(data[[cont_x]], data[[cont_y]], pch="+", cex=1)
-      ch <- chull(cbind(data[[cont_x]], data[[cont_y]]))
-      polygon(cbind(data[[cont_x]], data[[cont_y]])[ch,])
+      points(data_na.omit[[cont_x]], data_na.omit[[cont_y]], pch="+", cex=1)
+      ch <- chull(data_na.omit[[cont_x]], data_na.omit[[cont_y]])
+      polygon(cbind(data_na.omit[[cont_x]], data_na.omit[[cont_y]])[ch,])
       
     }
     #stop recording
     dev.off()
     par(mfrow = c(1,1))
-  } # no CI's
+  } # poly done! 
   if (length(cont)==2 & length(factors)==0){
     # one contourplot produced (cont1 against cont2 and z = response)
     
@@ -335,9 +354,12 @@ plotting = function(list, verbose = T){
     cont_x = cont[1]
     cont_y = cont[2]
     
+    print("This is the data")
+    print(head(data))
+    
     #make prediction sequence for both cont pred variables
-    cont_x_seq <- seq(min(data[[cont_x]]), max(data[[cont_x]]), length = 30)
-    cont_y_seq <- seq(min(data[[cont_y]]), max(data[[cont_y]]), length = 30)
+    cont_x_seq <- seq(min(data_na.omit[[cont_x]], na.rm = T), max(data_na.omit[[cont_x]], na.rm = T), length = 30)
+    cont_y_seq <- seq(min(data_na.omit[[cont_y]], na.rm = T), max(data_na.omit[[cont_y]], na.rm = T), length = 30)
     
     #prediction
     z = outer(X = cont_x_seq, 
@@ -369,15 +391,18 @@ plotting = function(list, verbose = T){
     #add contours
     contour(cont_x_seq, cont_y_seq, z, add=T)
     #add the points
-    points(data[[cont_x]], data[[cont_y]], pch="+", cex=1)
+    points(data_na.omit[[cont_x]], data_na.omit[[cont_y]], pch="+", cex=1)
     #add the margin line for points
-    ch <- chull(cbind(data[[cont_x]], data[[cont_y]]))
-    polygon(cbind(data[[cont_x]], data[[cont_y]])[ch,])
+    ch <- chull(cbind(data_na.omit[[cont_x]], data_na.omit[[cont_y]]))
+    polygon(cbind(data_na.omit[[cont_x]], data_na.omit[[cont_y]])[ch,])
     
     #stop recording
     dev.off()
-  } # no CI's
+  } # poly done!
   if (length(cont)==2 & length(factors)==1){
+    if(verbose){cat('\nenter plotting: 2 cont & 1 cat')}
+    
+    
     # contourplot / heatmap for cont1 & cont2 (z being response), for each level of cat1 new conturplot
     #(make the same as for 3 cont vars, where the factor are the quantiles)
     #heatplot with contours for cont1 & cont2 with z being response, cont3 is made discrete through quantile and plotted to three distinct contourplots
@@ -387,13 +412,13 @@ plotting = function(list, verbose = T){
     cont_y = cont[2]
     cat1 = factors[1]
     
-    cont_x_seq <- seq(min(data[[cont_x]]), max(data[[cont_x]]), length = 50)
-    cont_y_seq <- seq(min(data[[cont_y]]), max(data[[cont_y]]), length = 50)
+    cont_x_seq <- seq(min(data_na.omit[[cont_x]]), max(data_na.omit[[cont_x]]), length = 50)
+    cont_y_seq <- seq(min(data_na.omit[[cont_y]]), max(data_na.omit[[cont_y]]), length = 50)
     
-    cat1_levels = levels(data[[cat1]]) # get the levels of cat1
+    cat1_levels = levels(data_na.omit[[cat1]]) # get the levels of cat1
     
     #rows needed:
-    rows_needed <- ceiling(length(levels_fac3) / 2)
+    rows_needed <- ceiling(length(cat1_levels) / 2)
     if (rows_needed == 0){
       rows_needed = 1 # set 1 nrwo to minim, otherwise an error occurs
     }
@@ -428,19 +453,21 @@ plotting = function(list, verbose = T){
             main = paste0("response ",responseName(model), " with cat predictor ", cat1, ' & level "', cat1_levels[i], '"'))
       grid(col = "lightgrey")
       contour(cont_x_seq, cont_y_seq, z, add=T)
-      points(data[[cont_x]], data[[cont_y]], pch="+", cex=1)
-      ch <- chull(cbind(data[[cont_x]], data[[cont_y]]))
-      polygon(cbind(data[[cont_x]], data[[cont_y]])[ch,])
+      points(data_na.omit[[cont_x]], data_na.omit[[cont_y]], pch="+", cex=1)
+      ch <- chull(cbind(data_na.omit[[cont_x]], data_na.omit[[cont_y]]))
+      polygon(cbind(data_na.omit[[cont_x]], data_na.omit [[cont_y]])[ch,])
       
     }
     
     #stop recording
     dev.off()
     
-  } # no CI's
+  } # poly done! but weird behaviour!
   
   ### if statements just factors: boxplots ####
   if(length(factors) == 3 & length(cont) == 0){
+    
+    if(verbose){cat("\nenter plotting: 3 cat\n")}
     
     # factor variable names
     fac1 <- factors[1]
@@ -448,9 +475,9 @@ plotting = function(list, verbose = T){
     fac3 <- factors[3]
     
     # levels per variable
-    levels_fac1 <- levels(mf[[fac1]])
-    levels_fac2 <- levels(mf[[fac2]])
-    levels_fac3 <- levels(mf[[fac3]])
+    levels_fac1 <- levels(data_na.omit[[fac1]])
+    levels_fac2 <- levels(data_na.omit[[fac2]])
+    levels_fac3 <- levels(data_na.omit[[fac3]])
     
     # number of rows needed for plotting
     rows_needed <- ceiling(length(levels_fac3) / 2)
@@ -464,7 +491,7 @@ plotting = function(list, verbose = T){
     for (level_fac3 in levels_fac3) {
       
       #subset model frame to current fac3 level
-      mf_sub <- mf[mf[[fac3]] == level_fac3, ]
+      mf_sub <- data_na.omit[data_na.omit[[fac3]] == level_fac3, ]
       
       # create prediction grid for fac1 and fac2
       grid <- expand.grid(levels_fac2, levels_fac1)
@@ -505,7 +532,7 @@ plotting = function(list, verbose = T){
       boxplot(mf_sub[[responseName(model)]] ~ mf_sub$interaction_group,
               col = rep(colors, times = length(levels_fac1)),
               xaxt = "n", xlab = fac1, las = 1,
-              ylim = range(c(mf[[responseName(model)]], grid$upper_CI, grid$lower_CI)),
+              ylim = range(c(data_na.omit[[responseName(model)]], grid$upper_CI, grid$lower_CI)),
               ylab = responseName(model),
               main = paste(fac3, "=", level_fac3))
       
@@ -547,16 +574,18 @@ plotting = function(list, verbose = T){
     }
     
     dev.off()
-  } # CIs done
+  } # poly done
   if(length(factors)==2 & length(cont)==0){
     
     # factor variable names
     fac1 = factors[1]
     fac2 = factors[2]
     
+    
+    
     #levels per variable
-    levels_fac1 = levels(mf[[fac1]])
-    levels_fac2 = levels(mf[[fac2]])
+    levels_fac1 = levels(data_na.omit[[fac1]])
+    levels_fac2 = levels(data_na.omit[[fac2]])
     
     #create grid for predictions
     grid <- expand.grid(levels_fac2, levels_fac1)
@@ -577,17 +606,17 @@ plotting = function(list, verbose = T){
     colors = rainbow(length(levels_fac2))
     
     #prepare grouping variable for correct boxplot order
-    mf$interaction_group <- interaction(mf[[fac1]], mf[[fac2]], sep = "_")
+    data_na.omit$interaction_group <- interaction(data_na.omit[[fac1]], data_na.omit[[fac2]], sep = "_")
     grid$interaction_group <- interaction(grid[[fac1]], grid[[fac2]], sep = "_")
     
     # order boxplot by interaction
-    ordered_groups <- levels(interaction(mf[[fac1]], mf[[fac2]], sep = "_"))
+    ordered_groups <- levels(interaction(data_na.omit[[fac1]], data_na.omit[[fac2]], sep = "_"))
     
     png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
     par(mar = c(5, 4, 4, 8), xpd = TRUE)
     
-    boxplot(mf[[responseName(model)]] ~ mf$interaction_group, col = rep(colors, times = length(levels_fac1)), 
-            xaxt = "n", xlab = fac1, las = 1, ylim = range(c(mf[[responseName(model)]], grid$upper_CI, grid$lower_CI)), 
+    boxplot(data_na.omit[[responseName(model)]] ~ data_na.omit$interaction_group, col = rep(colors, times = length(levels_fac1)), 
+            xaxt = "n", xlab = fac1, las = 1, ylim = range(c(data_na.omit[[responseName(model)]], grid$upper_CI, grid$lower_CI)), 
             ylab = responseName(model))
     
     #add predictions in correct order
@@ -625,18 +654,17 @@ plotting = function(list, verbose = T){
     }
     
     dev.off()
-  } # CI's done!
+  } # poly done
   if (length(factors)==1 & length(cont)==0){
     
     #factor variable names
-    fac1 = factors[1]
+    fac1 = factors
     
     # levels per variable
-    levels_fac1 = levels(mf[[fac1]])
+    levels_fac1 = levels(data_na.omit[[fac1]])
     
     grid = expand.grid(dummy_fac1 = levels_fac1)
     names(grid) = c(fac1)
-    grid
     
     preds = predict(model, newdata = grid, type = "link", se.fit = T)
     
@@ -650,7 +678,7 @@ plotting = function(list, verbose = T){
     #start plotting and recording
     png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
     par(mar = c(5, 4, 4, 8), xpd = TRUE)  # Expand right margin
-    boxplot(formula.vlm(model), data = mf, col = colors, 
+    boxplot(formula.vlm(model), data = data_na.omit, col = colors, 
             xlab = fac1, las = 1, 
             main = paste("predictions for every level of", fac1))
     
@@ -685,7 +713,7 @@ plotting = function(list, verbose = T){
     par(mar = c(5.1, 4.1, 4.1, 2.1)) 
     
     
-  } # CI's done!
+  } # 
   
   return(list)
 }
