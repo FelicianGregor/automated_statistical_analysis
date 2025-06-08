@@ -8,18 +8,14 @@ plotting = function(list, verbose = T){
   
   # get the vars names
   vars = all.vars(model@misc$formula)[-1]
-  print(vars)
+  vars_number = length(vars)
   
-  # get the respective class:
+  # get the respective class of the vars to get plotted
   data_classes = sapply(data_na.omit[,vars, drop = FALSE], FUN = class)
-  print("these are the data classes")
-  print(data_classes)
   
   #split in cont and fac preds
   cont = names(which(data_classes=="numeric" | data_classes == "integer"))
   factors = names(which(data_classes=="factor" | data_classes=="ordered" | data_classes == "character"))
-  print("print out factors")
-  print(factors)
   
   if (verbose){
     cat("these are the cont:\n")
@@ -28,15 +24,31 @@ plotting = function(list, verbose = T){
     cat(factors)
   }
   
-  # what cant get displayed yet:
-  if (length(factors)>3){
-    cat("models with more than three factors can't get displayed yet! Instead, the three variables with highest shapley values will be used.\n")}
-  if (length(cont)>3 & length(factors)==0){
-    cat("models with more than three continuous variables can't get displayed! Instead, the three variables with highest shapley values will be used.\n")}
-  if((length(cont)==3 + length(factors)) > 3){
-    cat("models with more than three predictors in total can't get displayed yet! Instead, the three variables with highest shapley values will be used.\n")}
+  # what can't get displayed yet: if more than 3 vars
+  if (vars_number>3){
+    cat("\nmodels with more than three variables as predictors can't get displayed by the AS!\n")
+    #make mar smaller
+    par(mar = c(1,1,1,1))
+    
+    # produce plot with text that this cannot get displayed:
+    png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
+    
+    # draw plotting window
+    plot(c(0, 10), c(0, 10), type = "n", ann = FALSE, bty = "o", xaxt = "n", yaxt = "n")
+    
+    # add text description to make the issue more explicit 
+    text(x = 5, y = 5,
+         labels = "The AS cannot display a plot for this model.\nThis is because you have more than 3 predictors.",
+         cex = 1)
+    
+    #stop recording of the plot:
+    dev.off()
+    
+    #set mar back to default
+    par(mar = c(5.1, 4.1, 4.1, 2.1))
+  }
   
-  # if statements cont & cat facet plots####
+  ### if statements cont & cat facet plots####
   if (length(factors) == 2 & length(cont)== 1){
     # make scatter plot for cont pred & cont response, color  = pred cat1, factet for cat2
     
@@ -89,7 +101,7 @@ plotting = function(list, verbose = T){
            xlab = cont, ylab = responseName(model), 
            xlim = x_lim_range, ylim = y_lim_range, 
            main = paste0("model predictions with ",fac2, ": ",  level_plot), 
-           pch = 1, las = 1)
+           pch = 1, las = 1, asp = 1)
       
       grid(col = "lightgrey") # add grid
       
@@ -191,7 +203,7 @@ plotting = function(list, verbose = T){
          xlab = cont, ylab = responseName(model), 
          xlim = x_lim_range, ylim = y_lim_range, 
          main = paste0("model predictions depending on ", cont, " & ", fac1), 
-         pch = 16, las = 1)
+         pch = 16, las = 1, asp = 1)
     
     #add legend and create colors wit length of number of levels
     colors <- rainbow(length(levels_col_vec))
@@ -264,7 +276,7 @@ plotting = function(list, verbose = T){
     
     #plot
     x = data_na.omit[[cont_x]]
-    y = model@y
+    y = data_na.omit[[responseName(model)]]
     
     # back transform to response scale and compute CI's
     fit = model@family@linkinv(preds$fitted.values, extra = model@extra)
@@ -272,8 +284,9 @@ plotting = function(list, verbose = T){
     lower_CI = model@family@linkinv(preds$fitted.values - 1.96*preds$se.fit , extra = model@extra)
     
     #start recording
-    png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
+    png('./output/plots/plot.png', width = 4, units = "in", height = 4, res = 300)
     
+    #make the plot
     plot(x, y,
          xlab = paste("predictor", cont_x), 
          ylab = paste("response", responseName(model)), 
@@ -334,7 +347,7 @@ plotting = function(list, verbose = T){
       # plotting
       image(cont_x_seq, cont_y_seq, z, cex.lab = 1.5, 
             ylab = paste(cont_y), xlab = paste(cont_x),
-            col = heat.colors(30), 
+            col = heat.colors(30),
             main = paste0("response ",responseName(model), " with ", quantiles[i]*100, "th quant. value ", cont_quant_values[i], " of varible ", cont_quant))
       grid(col = "lightgrey")
       contour(cont_x_seq, cont_y_seq, z, add=T)
@@ -353,9 +366,6 @@ plotting = function(list, verbose = T){
     #split the data to the two seperate preds
     cont_x = cont[1]
     cont_y = cont[2]
-    
-    print("This is the data")
-    print(head(data))
     
     #make prediction sequence for both cont pred variables
     cont_x_seq <- seq(min(data_na.omit[[cont_x]], na.rm = T), max(data_na.omit[[cont_x]], na.rm = T), length = 30)
@@ -384,7 +394,7 @@ plotting = function(list, verbose = T){
     #make plot
     image(cont_x_seq, cont_y_seq, z, cex.lab = 1.5,
           ylab = paste(cont_y), xlab = paste(cont_x),
-          col = heat.colors(30), 
+          col = heat.colors(30), las = 1, 
           main = paste("response", responseName(model), "depending on", cont_y, "&", cont_x))
     #add grid
     grid(col = "lightgrey")
@@ -449,10 +459,10 @@ plotting = function(list, verbose = T){
       # plotting
       image(cont_x_seq, cont_y_seq, z, cex.lab = 1.5,
             ylab = paste(cont_y), xlab = paste(cont_x),
-            col = heat.colors(30), 
+            col = heat.colors(30), las = 1, 
             main = paste0("response ",responseName(model), " with cat predictor ", cat1, ' & level "', cat1_levels[i], '"'))
       grid(col = "lightgrey")
-      contour(cont_x_seq, cont_y_seq, z, add=T)
+      contour(cont_x_seq, cont_y_seq, z, add=T,)
       points(data_na.omit[[cont_x]], data_na.omit[[cont_y]], pch="+", cex=1)
       ch <- chull(cbind(data_na.omit[[cont_x]], data_na.omit[[cont_y]]))
       polygon(cbind(data_na.omit[[cont_x]], data_na.omit [[cont_y]])[ch,])

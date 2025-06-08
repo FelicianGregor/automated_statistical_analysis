@@ -82,7 +82,7 @@ system_function = function(formula, data, mode, dist = "uninormal", verbose = TR
   return(list)
 }
 
-#try out with some data:
+#load required packages
 library(lterdatasampler)
 library(DHARMa)
 library(VGAM)
@@ -91,23 +91,26 @@ library(polycor) # for hetcor() --> continuous, polychoric / polyserial correlat
 library(shapviz) # for shapley values (in script model_fitting)
 library(ggplot2) # for visualizing shapley values (script model_fitting)
 library(ggthemes) # for making shapley values pretty (script model_fitting)
+
+# test the system on data
 data = knz_bison
 knz_bison$rec_month = as.factor(data$rec_month)
 knz_bison$animal_sex = as.factor(data$animal_sex)
 knz_bison$age = knz_bison$rec_year - knz_bison$animal_yob
 
-result = system_function(formula = animal_weight ~ animal_sex*age, data = knz_bison, mode = "test", dist = "uninormal")
+# run the system
+result = system_function(formula = animal_weight ~ animal_sex*poly(age, 4), data = knz_bison, mode = "test", dist = "uninormal")
 
 # two cat, one cont:
 data(mtcars)
-data$am = as.factor(data$am)
-data$vs = as.factor(data$vs)
-data$gear = as.factor(data$gear)
+mtcars$am = as.factor(mtcars$am)
+mtcars$vs = as.factor(mtcars$vs)
+mtcars$gear = as.factor(mtcars$gear)
 
-result2 = system_function(formula =  mpg~ hp*qsec, data = data, mode = "test", dist = "uninormal")
+test = system_function(formula =  mpg~ hp*qsec, data = mtcars, mode = "test", dist = "uninormal")
 
 
-#### test the function on some data ####
+
 library(lterdatasampler) # data freely available, credits to https://lter.github.io/lterdatasampler/reference/and_vertebrates.html
 
 #load data
@@ -125,11 +128,7 @@ summary(hbr_maples)
 # elevation: Low and Mid as levels 
 
 #test the function
-test = system_function(formula = stem_dry_mass ~ watershed * as.factor(year), data = hbr_maples, mode = "test", dist = uninormal())
-# better reporting of DHARMa results!
-# explanation of the model summary printed
-plot(stem_dry_mass ~ watershed * elevation, data = hbr_maples, las = 1, alpha = 0.8, ask = F)
-
+test1 = system_function(formula = stem_dry_mass ~ watershed * as.factor(year), data = hbr_maples, mode = "test", dist = uninormal())
 
 # another test:
 #install.packages("AER")
@@ -139,38 +138,42 @@ NMES1988$adl = as.factor(NMES1988$adl)
 NMES1988$region = as.factor(NMES1988$region)
 NMES1988$health = as.factor(NMES1988$health)
 
-
+# run the analysis function
 test2 = system_function(visits ~ as.factor(gender) * poly(age, 2),
                         data = NMES1988, dist = "poissonff", mode = "test", verbose = T)
-
-#last example test
+#problems: for many data points, the points are lying on top of the predicted response with error bars so that one cannot see everything
+# might be specific to one cat and one cont in plotting
+##### example test
 data("ntl_icecover")
 
+# run the analysis function
 test3 = system_function(ice_duration ~ year,
                         data = ntl_icecover, dist = "uninormal", mode = "test", verbose = T)
+# problem: looks good. just the plotting window quadratic!
 
-# another example data set:
-
+##### another example data set
 data = mtcars
 
-test4 = system_function(disp ~  poly(hp, 3) + as.factor(am) * as.factor(gear), data = mtcars, dist = "uninormal", mode = "test", verbose = T)
+# run the analysis function
+test4 = system_function(disp ~  poly(hp, 3) + as.factor(am) + as.factor(gear), data = mtcars, dist = "uninormal", mode = "test", verbose = T)
+# looks ok!
 
-ozone
+##### another test, including poly()
+ozone # ozone dataset
 
-O3 ~ temp + humidity + I(temp^2) + I(temp^3) + I(wind^3)
-test4 = system_function(O3 ~ (poly(temp, 4) + poly(wind, 4) + poly(humidity, 4) + poly(vis, 3))^3, data = ozone, dist = "uninormal", mode = "test", verbose = T)
+test4.1 = system_function(O3 ~ (poly(temp, 4) + poly(wind, 4) + poly(humidity, 4) + poly(vis, 3))^3, data = ozone, dist = "uninormal", mode = "test", verbose = T)
+test4.2 = system_function(O3 ~ temp * wind * humidity, data = ozone, dist = "uninormal", mode = "test", verbose = T)
 
+##### test for including poly and categorical variables
 data = mtcars
 data$gear = as.factor(mtcars$gear)
 data$am = as.factor(mtcars$am)
 data$cyl = as.factor(mtcars$cyl)
 
-test4 = system_function(disp ~ am + poly(as.factor(gear), 2) + cyl, data = data, dist = "uninormal", mode = "test", verbose = T)
+test5 = system_function(disp ~ am + poly(as.factor(gear), 2) + cyl, data = data, dist = "uninormal", mode = "test", verbose = T)
+# makes predictions also for NA values??
 
-
-str(mtcars)
-
-# test with three categorial vars:
+##### test on three categorical vars ####
 # Load required library
 library(VGAM)
 
@@ -210,10 +213,9 @@ df$response <- with(df,
                       rnorm(nrow(df), mean = 0, sd = 2))
 
 # test
-test4 = system_function(response ~ fac3, data = df, dist = "uninormal", mode = "test", verbose = T)
+test4 = system_function(response ~ fac3*fac2*fac1, data = df, dist = "uninormal", mode = "test", verbose = T)
 
-##### test on binomial data ####
-### test binomial data on passer montanus (that is not montanus haha) ####
+# test binomial data on passer montanus ####
 library(jSDM)
 data("birds")
 
@@ -254,8 +256,7 @@ str(birds$forest_Q)
 head(birds)
 
 # vglm(cbind(succ, fail) ~ forest * elev, data = birds, family = "binomialff")
-test4 = system_function(succ ~ elev*forest, data = birds, dist = "binomialff", mode = "test", verbose = T)
-
+test4 = system_function(succ ~ forest, data = birds, dist = "binomialff", mode = "test", verbose = T)
 
 
 ###### to do ######

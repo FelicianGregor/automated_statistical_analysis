@@ -83,7 +83,8 @@ print(list$diagnostics$VIF_critical_terms)
   
   num_preds = length(rownames(list$model_summary@coef3)[-grep("Intercept", rownames(list$model_summary@coef3))]) #exclude intercepts
   list$reporting$model_results$plots_and_text = if (vars_number>3){
-    "Your model contains more than three predictor variables. Therefore, we used only the three predictor variables with highest variable importance (mean absolute shapley value) for producing the graphics. "
+    'Your model contains more than three predictor variables and therefore cannot be displayed by the AS.\n![plot](../plots/plot.png){width=100% fig-align="center"}'
+    
   } else{
     'Please have a look at the plots below.\n![plot](../plots/plot.png){width=100% fig-align="center"}'
   }

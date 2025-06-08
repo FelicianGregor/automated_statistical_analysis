@@ -17,16 +17,6 @@ diagnose = function(list, verbose = TRUE){
   #}
   list$misc$all_integer_response = all(ds4psy::is_wholenumber(birds[,responseName(fm)])) #apply function to every cell in col and check if every cell is integer
   
-  #debugging for binomial
-  print("y var:")
-  print(list$model@y)
-  
-  print("simulatedResponse:")
-  print(dim(as.matrix(simulate.vlm(list$model, nsim = 1000))))
-  
-  print("fittedPredictedResponse")
-  print(dim(as.vector(predictvglm(list$model, type = "response"))))
-  
   # create DHARMa object: first simulating y from model & predicting y from model
   list$diagn_DHARMa$sim = createDHARMa(simulatedResponse = as.matrix(simulate.vlm(list$model, nsim = 1000)), 
                                        observedResponse = as.vector(list$model@y), 
@@ -110,6 +100,12 @@ diagnose = function(list, verbose = TRUE){
   
   if (vars_number>1){
     if (verbose){cat("\nentered correlation analysis\n")}
+    
+    if (verbose){cat("\nthese are the vars used for the corr\n")
+      cat(vars)
+      cat("\nand the respective data classes\n")
+      cat(sapply(list$data_na.omit[, vars, drop = FALSE], FUN = class))
+      cat("\n")}
     
     #criterion Dormann 2017: abs value of correlations need to be below 0.7 (0.5-0.7, but I don't want to be that conservative)
     corr_mat_kendalls = polycor::hetcor(list$data_na.omit[, vars], 

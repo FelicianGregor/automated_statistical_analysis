@@ -48,18 +48,16 @@ build_model = function(list, verbose = TRUE){
   
   
   # variable importance: SHAP values ####
-  
-  if (ncol(list$model@model)>2){
+  vars = all.vars(list$model@misc$formula)[-1] # get all vars
+  vars_number = length(vars) # get number of vars
+  if (vars_number >1){
     if (verbose){
     cat("starting shapley values\n")
     }
     
     #make data ready for computing shapley values
-    vars = all.vars(list$model@misc$formula)[-1] # get just variable names without poly and y etc.
-    x_data = as.data.frame(list$data_na.omit[,c(vars)]) # get origial variable names and data, rescale it!
-    
-    y_data = as.data.frame(scale(list$model@model[, 1])) # get just y and scale it?
-    
+    x_data = list$data_na.omit[,c(vars)] # get origial variable names and data, rescale it
+    y_data = as.data.frame(scale(list$data_na.omit[, responseName(list$model)])) # get just y and scale it?
     
     #prediction wrapper specifying how to obtain the predicted values from vglm objects
     # differentiate whether one or two variables are fitted and thus given back by the predict function of vglm. Explain needs just preds of mean
@@ -73,14 +71,11 @@ build_model = function(list, verbose = TRUE){
       }
     }
     
-    print("start to explain")
-
-  
     #compute values
     explained_model <- fastshap::explain(list$model, feature_names = NULL,  X=x_data, pred_wrapper=pred_vglm, adjust=T, nsim=50, shap_only = FALSE) # shap_inly = TRUE --> just shap values returned
     
     # make a tibble out of the dataframe...
-    tibble::as_tibble(explained_model$shapley_values)
+    (tibble::as_tibble(explained_model$shapley_values))
     
     #visualize:
     #make a shapviz object out of the fastshap for using it in the visualizations
