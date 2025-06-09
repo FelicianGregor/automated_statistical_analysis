@@ -17,8 +17,9 @@ report = function(list, verbose = T){
   
   list$reporting$input_data_prep$NA_sentence = paste0("We detected ", list$data_na.omitted_number, " NA values that were deleted. ")
   
-  num_preds = length(rownames(list$model_summary@coef3)[-grep("Intercept", rownames(list$model_summary@coef3))]) # access the model summary, where all the estimated parameters are listed, excluding Intercepts
-  list$reporting$input_data_prep$number_data_points_per_var = (nrow(list$data_na.omit)) / (num_preds)
+  num_preds = list$misc$n_parameters_beta # as determined in model_fitting: model matrix, that expands interactions and poly and factors to dummies, thus giving for every beta estimated by the model one column
+  list$reporting$input_data_prep$number_data_points_per_var = round((nrow(list$data_na.omit)) / (num_preds), 2)
+  
   
   list$reporting$input_data_prep$variable_number_sentence = paste0("Your model contains ", list$reporting$input_data_prep$number_data_points_per_var, 
                                                                    " data points per independent variable, ")
@@ -37,8 +38,8 @@ report = function(list, verbose = T){
   vars_number = length(vars) # number of vars
   
   if (vars_number>1){ # just in case there are more than one predictor variables
-    if (list$diagnostics$corr_number_critical_tau > 0){
-    list$reporting$input_data_prep$corr_issues_sentence = paste("The following predictors are highly correlated suggesting issues with collinearity among the independent variables. This can lead to variance inflation (high standard errors) of your parameter estimates. Below, please find the critical predictors pairs and their respective correlation values (Kendall's Tau). ")
+    if (list$diagnostics$corr_number_critical_rho > 0){
+    list$reporting$input_data_prep$corr_issues_sentence = paste("The following predictors are highly correlated suggesting issues with collinearity among the independent variables. This can lead to variance inflation (high standard errors) of your parameter estimates. Below, please find the critical predictors pairs and their respective correlation values (Pearsons rho). ")
     list$reporting$input_data_prep$corr_table = '```{r}
 #| echo: false
 list = readRDS("list_reporting.RDS")
@@ -46,7 +47,7 @@ print(list$diagnostics$corr_critical_res_table)
 
 ```'
     } else {
-    list$reporting$input_data_prep$corr_issues_sentence = "We did not detect high correlation values (tau > 0.7) among the predictor variables. "
+    list$reporting$input_data_prep$corr_issues_sentence = "We did not detect high correlation values (rho > 0.7) among the predictor variables. "
     }
   }
   
@@ -67,10 +68,16 @@ print(list$diagnostics$VIF_critical_terms)
   
   # if both corr and VIF are not critical: print a sentance that nothing critical was found
   if (vars_number>1){ # just in case there are more than one predictor variable
-    if (nrow(list$diagnostics$VIF_critical_terms) == 0 & list$diagnostics$corr_number_critical_tau == 0){
+    if (nrow(list$diagnostics$VIF_critical_terms) == 0 & list$diagnostics$corr_number_critical_rho == 0){
       list$reporting$input_data_prep$collinearity_issues_sentence = "This suggests that the model does not have any problems with collinearity.  "
     }
   }
+  
+  # add the correlation plot of all variables
+  list$reporting$input_data_prep$corr_plot = "For an initial overview of the data, a matrix of all variables contained in your model is provided. The graph shows a scatterplot of all variable combinations with a LOESS regression line, gives the histogram of every variable and Pearson's correlation coefficient (rho) of their combinations. Please check espcecially for gaps in the histograms since this could potentially cause problems in your model, but cannot be checked automatically by the AS.\n\n ![Combined graph of histograms, scatterplots and Pearson's rho for the input data used in the model.](../plots/corr_plot.png){width=70% fig-align='center'}"
+
+  
+  
   
   ##### model result ####
   list$reporting$model_results$intro = "In the table you find the parameter estimates or slopes of the GLM along with the upper and lower 95% confidence intervals (CI's) on the link scale with their significance denoted by an asterisk."
@@ -143,7 +150,7 @@ print(list$diagnostics$VIF_critical_terms)
   if (vars_number>1){
     add(list$reporting$input_data_prep$corr_issues_sentence)
   new_line()
-    if (list$diagnostics$corr_number_critical_tau>0){
+    if (list$diagnostics$corr_number_critical_rho>0){
       add(list$reporting$input_data_prep$corr_table)
       new_line()
     }
@@ -157,11 +164,13 @@ print(list$diagnostics$VIF_critical_terms)
     }
   }
   if (vars_number>1){ # just in case there are more than one predictor variable
-    if (nrow(list$diagnostics$VIF_critical_terms) == 0 & list$diagnostics$corr_number_critical_tau == 0){
+    if (nrow(list$diagnostics$VIF_critical_terms) == 0 & list$diagnostics$corr_number_critical_rho == 0){
       add(list$reporting$input_data_prep$collinearity_issues_sentence)
       new_line()
     }
   }
+  add(list$reporting$input_data_prep$corr_plot)
+  new_line()
   
   
   

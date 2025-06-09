@@ -15,7 +15,7 @@ diagnose = function(list, verbose = TRUE){
   #} else {
   #  list$misc$all_integer_response = all(ds4psy::is_wholenumber(birds[,responseName(fm)])) #apply function to every cell in col and check if every cell is integer
   #}
-  list$misc$all_integer_response = all(ds4psy::is_wholenumber(birds[,responseName(fm)])) #apply function to every cell in col and check if every cell is integer
+  list$misc$all_integer_response = all(ds4psy::is_wholenumber(list$data_na.omit[,responseName(list$model)])) #apply function to every cell in col and check if every cell is integer
   
   # create DHARMa object: first simulating y from model & predicting y from model
   list$diagn_DHARMa$sim = createDHARMa(simulatedResponse = as.matrix(simulate.vlm(list$model, nsim = 1000)), 
@@ -108,30 +108,32 @@ diagnose = function(list, verbose = TRUE){
       cat("\n")}
     
     #criterion Dormann 2017: abs value of correlations need to be below 0.7 (0.5-0.7, but I don't want to be that conservative)
-    corr_mat_kendalls = polycor::hetcor(list$data_na.omit[, vars], 
-               use="pairwise.complete.obs", method = "kendall")
+    corr_mat = polycor::hetcor(list$data_na.omit[, vars], 
+               use="pairwise.complete.obs", method = "pearson")
+    
+    # plot the hetcor matrix
   
     #extract pred pairs with thao larger than threshold:
     corr_mat_threshold = 0.7
     #set diagonal to NA (since cormat is mirrored)
-    diag(corr_mat_kendalls$correlations) = NA
-    corr_mat_kendalls$correlations[lower.tri(corr_mat_kendalls$correlations)] =  NA
+    diag(corr_mat$correlations) = NA
+    corr_mat$correlations[lower.tri(corr_mat$correlations)] =  NA
   
-    #save index in corr_mat_kendalls
-    index = which(abs(corr_mat_kendalls$correlations) > corr_mat_threshold, arr.ind = T)
+    #save index in corr_mat
+    index = which(abs(corr_mat$correlations) > corr_mat_threshold, arr.ind = T)
   
     #save the corr values as well as the respective pred vars
-    values = round(as.numeric(corr_mat_kendalls$correlations[index]), 2) # round numbers 
-    pred2 = row.names(as.data.frame(corr_mat_kendalls$correlations))[index[, 1]]
-    pred1 = names(as.data.frame(corr_mat_kendalls$correlations))[index[, 2]]
+    values = round(as.numeric(corr_mat$correlations[index]), 2) # round numbers 
+    pred2 = row.names(as.data.frame(corr_mat$correlations))[index[, 1]]
+    pred1 = names(as.data.frame(corr_mat$correlations))[index[, 2]]
   
     # write table
     corr_critical_res_table = data.frame("pred1" = pred1, 
                               "pred2" = pred2, 
-                              "Tau" = values)
+                              "rho" = values)
   
     # get number of corr values higher than abs (0.7)
-    corr_number_critical_tau = nrow(corr_critical_res_table)
+    corr_number_critical_rho = nrow(corr_critical_res_table)
     
     if (verbose){cat("correlations finished!\n")}
   }
@@ -183,9 +185,9 @@ diagnose = function(list, verbose = TRUE){
   
   list$diagnostics = list( # first the corr results
                           corr_critical_res_table = corr_critical_res_table, 
-                          corr_mat_kendalls = corr_mat_kendalls, 
+                          corr_mat = corr_mat, 
                           corr_mat_threshold = corr_mat_threshold, 
-                          corr_number_critical_tau = corr_number_critical_tau, 
+                          corr_number_critical_rho = corr_number_critical_rho, 
                           
                           #now the VIF results
                           VIF_threshold = VIF_threshold, 

@@ -203,7 +203,7 @@ plotting = function(list, verbose = T){
          xlab = cont, ylab = responseName(model), 
          xlim = x_lim_range, ylim = y_lim_range, 
          main = paste0("model predictions depending on ", cont, " & ", fac1), 
-         pch = 16, las = 1, asp = 1)
+         pch = 16, las = 1)
     
     #add legend and create colors wit length of number of levels
     colors <- rainbow(length(levels_col_vec))
