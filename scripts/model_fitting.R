@@ -15,13 +15,7 @@ build_model = function(list, verbose = TRUE){
   intercept_locs = which(grepl("Intercept", rownames(list$model_summary@coef3))) # get intercept locations in the dataframe to exclude them in next line
   p_values_uncorr = list$model_summary@coef3[,4][-c(intercept_locs)] # exclude the intercept:1 (location) and intercept:2 scale parameter 
   intercept_cols = which(grepl("Intercept", colnames(model.matrix(list$model))))
-  print("intercept cols")
-  print(intercept_cols)
-  print("ncol(model.matrix())")
-  print(ncol(model.matrix(list$model)))
-  print("without intercepts")
-  print(ncol(model.matrix(list$model)[, -c(intercept_cols)]))
-  n_parameters = ncol(model.matrix(list$model)[, -c(intercept_cols)]) #number of estimated parameters 
+  n_parameters = ncol(as.data.frame(model.matrix(list$model))[-c(intercept_cols)]) #number of estimated parameters 
   list$misc$n_parameters_beta = n_parameters # save information
   p_values_corrected = p_values_uncorr *  n_parameters # Bonferroni correction, multiply with number of parameters
   p_values_corrected = ifelse(p_values_corrected<1, p_values_corrected, 1) # restrict values to 1 (although they are no probabilities but solely decision criteria)
@@ -50,6 +44,22 @@ build_model = function(list, verbose = TRUE){
   res = data.frame(slope_link, upper_CI_link, lower_CI_link, significance) # put values together into a data.frame
   list$model_slopes_CI_significance = res
   
+  # make a pretty table and save information
+  #take _ away for prettier colnames
+  names(res) = str_replace_all(string = names(res), pattern = "_", replacement = " ")
+  # save rownames:
+  parameter = rownames(res)
+  res = cbind(parameter, res)
+  
+  # make gt table 
+  res = gt(as_tibble(res))
+  res = res %>%
+    tab_header(
+      title = md("**model results**")
+    )
+  
+  # save to directory as a png file 
+  gtsave(res, "./output/tables/model_results_table.png")
   
   if (verbose){
     cat("model fitted!\n")
@@ -95,7 +105,7 @@ build_model = function(list, verbose = TRUE){
     highest_shap_max_three = names(sort(colMeans(abs(shv.global$S)), decreasing = T))[1:3]
   
     # ordered barplot:
-    shapley_barplot = sv_importance(shv.global, kind = "bar", show_numbers = T) + ggtitle(label = "mean absolute shapley values")
+    shapley_barplot = sv_importance(shv.global, kind = "bar", show_numbers = T) + ggtitle(label = "mean absolute shapley values") + theme_minimal()
     ggsave(filename = "shapley_values_barplot.png", plot = shapley_barplot, path = './output/plots/',
           scale = 1, width = 3.5, height = 3.5, units = "in",
           dpi = 300, limitsize = TRUE)

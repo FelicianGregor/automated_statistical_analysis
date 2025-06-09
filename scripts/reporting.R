@@ -9,8 +9,8 @@ report = function(list, verbose = T){
   ##### input and data preparation ####
   list$reporting$input_data_prep$mode = list$mode
   list$reporting$input_data_prep$input_formula = paste(list$model@terms)
-  list$reporting$input_data_prep$model_sentence = paste0("You fitted a generalized linear model (`vglm()`-function in R) assuming the following relationship: ", 
-                                                         "`", list$reporting$input_data_prep$input_formula, "`")
+  list$reporting$input_data_prep$model_sentence = paste0("You fitted a generalized linear model (`vglm()`-function in R) assuming the following relationship: ", "\n\n", 
+                                                         "`", list$reporting$input_data_prep$input_formula, "`", " \n ")
   #save assumed distribution
   list$misc$distribution_name = stringr::str_remove(list$model@family@blurb[1], "\n\n")
   list$reporting$input_data_prep$dist_sentence = paste0("You assumed a ",list$misc$distribution_name , ". ")
@@ -74,19 +74,16 @@ print(list$diagnostics$VIF_critical_terms)
   }
   
   # add the correlation plot of all variables
-  list$reporting$input_data_prep$corr_plot = "For an initial overview of the data, a matrix of all variables contained in your model is provided. The graph shows a scatterplot of all variable combinations with a LOESS regression line, gives the histogram of every variable and Pearson's correlation coefficient (rho) of their combinations. Please check espcecially for gaps in the histograms since this could potentially cause problems in your model, but cannot be checked automatically by the AS.\n\n ![Combined graph of histograms, scatterplots and Pearson's rho for the input data used in the model.](../plots/corr_plot.png){width=70% fig-align='center'}"
+  list$reporting$input_data_prep$corr_plot = "For an initial overview of the data, a matrix of all variables contained in your model is provided. The graph shows a scatterplot of all variable combinations with a LOESS regression line, gives the histogram of every variable and Pearson's correlation coefficient (rho) of their combinations. Please check especially for gaps in the histograms since this could potentially cause problems in your model, but cannot be checked automatically by the AS.\n\n ![Combined graph of histograms, scatterplots and Pearson's rho for the input data used in the model.](../plots/corr_plot.png){width=70% fig-align='center'}"
 
   
   
   
   ##### model result ####
   list$reporting$model_results$intro = "In the table you find the parameter estimates or slopes of the GLM along with the upper and lower 95% confidence intervals (CI's) on the link scale with their significance denoted by an asterisk."
-  list$reporting$model_results$significance_output = capture.output(list$model_slopes_CI_significance)
+  list$reporting$model_results$significance_output = "![Table containing parameter estimates, their 95% confidence intervals and respective significance.](../tables/model_results_table.png){width=70% fig-align='center'}"
   
-  list$reporting$model_results$model_significance_explanation = "The null hypothesis (H0) that the slope is zero is tested and P values < 0.05 (Bonferroni corrected) are considered significant. Note, that every estimated model parameter is here defined as one hypothesis. In case of a significant parameter estimate, the associated H0 is rejected concluding that the research hypothesis (H1) and the theory is supported by the given data. In case of a non significant parameter estimate, H0 cannot be rejected but is retained and we conclude that there is no support for either H1 and the theory or H0.
-                    Below, the full model summary is provided for further details:"
-  
-  list$reporting$model_results$summary_output = capture.output(list$model_summary)
+  list$reporting$model_results$model_significance_explanation = "The null hypothesis (H0) that the slope is zero is tested and P values < 0.05 (Bonferroni corrected) are considered significant. Note, that every estimated model parameter is here defined as one hypothesis. In case of a significant parameter estimate, the associated H0 is rejected concluding that the research hypothesis (H1) and the theory is supported by the given data. In case of a non significant parameter estimate, H0 cannot be rejected but is retained and we conclude that there is no support for either H1 and the theory or H0."
   
   num_preds = length(rownames(list$model_summary@coef3)[-grep("Intercept", rownames(list$model_summary@coef3))]) #exclude intercepts
   list$reporting$model_results$plots_and_text = if (vars_number>3){
@@ -98,13 +95,13 @@ print(list$diagnostics$VIF_critical_terms)
   
   #add plot for variable importance: shapley values:
   if (vars_number>1){
-    list$reporting$model_results$shapley_plot_and_text = 'For determining the importance of specific independent variables on the predictions of your model, shapley values were computed and are visualized in the barplot below.\n![shapley values](../plots/shapley_values_barplot.png){width=50% height=50% fig-align="center"} '
+    list$reporting$model_results$shapley_plot_and_text = 'For determining the importance of specific independent variables on the predictions of your model, shapley values were calculated and are visualized in the barplot below.\n\n![shapley values](../plots/shapley_values_barplot.png){width=50% height=50% fig-align="center"}'
   }
   
   
   ##### model diagnostics ####
   list$reporting$diagnostics$intro_DHARMa_text = paste('Please check the model diagnostics carefully to make sure the inferences made are valid!',
-                                                       'For model diagnostics a simulation based approach with scaled (quantile) residuals from the `DHARMa`-package is used. These residuals can be interpreted intuitively in the same way as residuals from linear regression models. For more information please read [the introduction by Florian Hartig](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html).')
+                                                       'For model diagnostics a simulation based approach with scaled (quantile) residuals from the `DHARMa`-package is used. These residuals can be interpreted intuitively in the same way as residuals from linear regression models. For more information please read [the introduction by Florian Hartig](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html).\nIn case of significant test results, please check carefully the graphs provided. Since the tests are based on P values, given enough data points, even smallest deviations from the assumptions will turn significant, without providing information on the strength of the deviations and thus, if assumptions are indeed violated.')
   list$reporting$diagnostics$outlier_text = ifelse(list$diagn_DHARMa$outlier_test$p.value < 0.05, 
                                             paste("**DHARMa detected significantly more ouliers than usual!** "),
                                             "The DHARMa outlier test did not detect an unusual high number of outliers. ")
@@ -126,7 +123,6 @@ print(list$diagnostics$VIF_critical_terms)
 
   ### create params list for R-like output in chunk (model summary, especially) - to get replaced by html table?
   params = list()
-  params$model_results_output = list$reporting$model_results$summary_output
   params$significance_output = list$reporting$model_results$significance_output
   ### dynamically write text:
   source("./scripts/helper_functions.R") #load header() add() and new_line() function
@@ -181,19 +177,11 @@ print(list$diagnostics$VIF_critical_terms)
   new_line()
   add(list$reporting$model_results$intro)
   new_line()
-  add('```{r}
-#| echo: false
-cat(params$significance_output, sep = "\n")
-
-```')
+  new_line()
+  add(list$reporting$model_results$significance_output)
+  new_line()
   new_line()
   add(list$reporting$model_results$model_significance_explanation)
-  new_line()
-  add('```{r}
-#| echo: false
-cat(params$model_results_output, sep = "\n")
-
-```')
   new_line()
   add(list$reporting$model_results$plots_and_text)
   new_line()

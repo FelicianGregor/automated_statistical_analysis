@@ -91,6 +91,8 @@ library(polycor) # for hetcor() --> continuous, polychoric / polyserial correlat
 library(shapviz) # for shapley values (in script model_fitting)
 library(ggplot2) # for visualizing shapley values (script model_fitting)
 library(ggthemes) # for making shapley values pretty (script model_fitting)
+library(gt) # for making pretty tables
+library(tibble) # needed for gt tables
 
 # test the system on data
 data = knz_bison
@@ -107,8 +109,10 @@ mtcars$am = as.factor(mtcars$am)
 mtcars$vs = as.factor(mtcars$vs)
 mtcars$gear = as.factor(mtcars$gear)
 
-test = system_function(formula =  mpg~ hp*qsec, data = mtcars, mode = "test", dist = "uninormal")
-
+test = system_function(formula =  mpg~ hp*qsec, data = mtcars, mode = "test", dist = "poissonff")
+model = vglm(formula =  mpg~ hp*qsec, data = mtcars, family = "uninormal")
+model_p = vglm(formula =  mpg~ hp*qsec, data = mtcars, family = "poissonff")
+model.matrix(model_p)
 
 
 library(lterdatasampler) # data freely available, credits to https://lter.github.io/lterdatasampler/reference/and_vertebrates.html
@@ -140,7 +144,7 @@ NMES1988$health = as.factor(NMES1988$health)
 
 # run the analysis function
 test2 = system_function(visits ~ as.factor(gender) * poly(age, 2),
-                        data = NMES1988, dist = "poissonff", mode = "test", verbose = T)
+                        data = NMES1988, dist = "uninormal", mode = "test", verbose = T)
 #problems: for many data points, the points are lying on top of the predicted response with error bars so that one cannot see everything
 # might be specific to one cat and one cont in plotting
 ##### example test
@@ -257,10 +261,15 @@ head(birds)
 
 # vglm(cbind(succ, fail) ~ forest * elev, data = birds, family = "binomialff")
 test4 = system_function(succ ~ forest, data = birds, dist = "binomialff", mode = "test", verbose = T)
+model_binom = vglm(succ ~ forest, data = birds, family = "binomialff")
+model.matrix(model_binom)
+intercept_cols = which(grepl("Intercept", colnames(model.matrix(model_binom))))
+n_parameters = ncol(as.data.frame(model.matrix(model_binom))[-c(intercept_cols)])
 
+mm = model.matrix(model_binom)
+as.data.frame(model.matrix(model_binom))[1]
 
 ###### to do ######
-# - shapley values as variable importance
 # - 6 fix errors due to poly(x, 2) (error start with other data type...)
 # - 9 add more information on input data! => comprehensive data checking and report the findings
 # - 11 for small number of observation: add error bars using bootstrapping
