@@ -15,7 +15,7 @@ report = function(list, verbose = T){
   list$misc$distribution_name = stringr::str_remove(list$model@family@blurb[1], "\n\n")
   list$reporting$input_data_prep$dist_sentence = paste0("You assumed a ",list$misc$distribution_name , ". ")
   
-  list$reporting$input_data_prep$NA_sentence = paste0("We detected ", list$data_na.omitted_number, " NA values that were deleted. ")
+  list$reporting$input_data_prep$NA_sentence = paste0("We detected ", list$data_na.omitted_number, " NA values that were deleted. This means, a complete case analysis was performed. Note, that depending on the type of missingness of the data, complete case analysis may cause a reduction in power and biased estimates.")
   
   num_preds = list$misc$n_parameters_beta # as determined in model_fitting: model matrix, that expands interactions and poly and factors to dummies, thus giving for every beta estimated by the model one column
   list$reporting$input_data_prep$number_data_points_per_var = round((nrow(list$data_na.omit)) / (num_preds), 2)
@@ -74,9 +74,7 @@ print(list$diagnostics$VIF_critical_terms)
   }
   
   # add the correlation plot of all variables
-  list$reporting$input_data_prep$corr_plot = "For an initial overview of the data, a matrix of all variables contained in your model is provided. The graph shows a scatterplot of all variable combinations with a LOESS regression line, gives the histogram of every variable and Pearson's correlation coefficient (rho) of their combinations. Please check especially for gaps in the histograms since this could potentially cause problems in your model, but cannot be checked automatically by the AS.\n\n ![Combined graph of histograms, scatterplots and Pearson's rho for the input data used in the model.](../plots/corr_plot.png){width=70% fig-align='center'}"
-
-  
+  list$reporting$input_data_prep$corr_plot = "For an initial overview of the data, a matrix of all variables contained in your model is provided. The graph shows a scatterplot of all variable combinations with a LOESS regression line, gives the histogram of every variable and Pearson's correlation coefficient (rho) of their combinations. Please check especially for gaps in the histograms of the predictor variables since this could potentially cause problems in your model, but cannot be checked automatically by the AS.\n\n ![Combined graph of histograms, scatterplots and Pearson's rho for the input data used in the model.](../plots/corr_plot.png){width=70% fig-align='center'}"
   
   
   ##### model result ####
@@ -103,7 +101,7 @@ print(list$diagnostics$VIF_critical_terms)
   list$reporting$diagnostics$intro_DHARMa_text = paste('Please check the model diagnostics carefully to make sure the inferences made are valid!',
                                                        'For model diagnostics a simulation based approach with scaled (quantile) residuals from the `DHARMa`-package is used. These residuals can be interpreted intuitively in the same way as residuals from linear regression models. For more information please read [the introduction by Florian Hartig](https://cran.r-project.org/web/packages/DHARMa/vignettes/DHARMa.html).\nIn case of significant test results, please check carefully the graphs provided. Since the tests are based on P values, given enough data points, even smallest deviations from the assumptions will turn significant, without providing information on the strength of the deviations and thus, if assumptions are indeed violated.')
   list$reporting$diagnostics$outlier_text = ifelse(list$diagn_DHARMa$outlier_test$p.value < 0.05, 
-                                            paste("**DHARMa detected significantly more ouliers than usual!** "),
+                                            paste("**DHARMa detected significantly more ouliers than expected!** "),
                                             "The DHARMa outlier test did not detect an unusual high number of outliers. ")
   list$reporting$diagnostics$dispersion_text = ifelse(list$diagn_DHARMa$dispersion_test$p.value < 0.05, 
                                                       "**DHARMa detected over / underdispersion issues.** ", 
@@ -113,7 +111,55 @@ print(list$diagnostics$VIF_critical_terms)
                                                       "DHARMa did not detect suspicious deviations from residual uniformity. ")
   list$reporting$diagnostics$quantiles_text = ifelse(list$diagn_DHARMa$quantile_test$p.value < 0.05, 
                                                     "**DHARMa detected significant quantile deviations from the expected values.** ", 
-                                                    "DHARMa did not find suspicious deviations of the quantiles from th expected values. ")
+                                                    "DHARMa did not find suspicious deviations of the quantiles from the expected values. ")
+  
+  ## compile the results from the model diagnostics in a table that can be saved as a gt table
+
+  # test type:
+  test_type = c("DHARMa::testOutlier", 
+                "DHARMa::testDispersion", 
+                "DHARMa::testQuantiles", 
+                "DHARMa::testUniformity")
+  
+  print(test_type)
+  
+  # significance
+  critical = c(ifelse(list$diagn_DHARMa$outlier_test$p.value < 0.05, yes = "**!** ",no ="not critical"), 
+               ifelse(list$diagn_DHARMa$dispersion_test$p.value < 0.05, yes = "**!** ",no ="not critical"), 
+               ifelse(list$diagn_DHARMa$uniformity_test$p.value < 0.05, yes = "**!** ",no ="not critical"), 
+               ifelse(list$diagn_DHARMa$quantile_test$p.value < 0.05, yes = "**!** ", no ="not critical"))
+  
+  print(critical)
+  
+  # text
+  interpretation_text = c(list$reporting$diagnostics$outlier_text, 
+                          list$reporting$diagnostics$dispersion_text, 
+                          list$reporting$diagnostics$uniformity_text, 
+                          list$reporting$diagnostics$quantiles_text)
+  
+  print(interpretation_text)
+  
+  # compile
+  test_table = data.frame("Test" = test_type, 
+                          "Result" = critical, 
+                          "Interpretation of the result" = interpretation_text)
+  
+  # make gt table 
+  test_table = gt(as_tibble(test_table))
+  test_table = test_table %>%
+    tab_header(title = md("**Results Model Diagnostics**"))%>%
+    cols_label(Test = md("**Test**"),
+               Result = md("**Result**"),
+               `Interpretation.of.the.result` = md("**Interpretation of the result**"))%>%
+    fmt_markdown(columns = everything())%>%
+    tab_style(style = cell_text(color = "red"),
+              locations = cells_body(columns = Result,
+                                     rows = Result == "**!**"))%>%
+    cols_align(align = "center", columns = Result)
+  
+  # save to directory as a png file 
+  gtsave(test_table, "./output/tables/model_diagnostics_table.png")
+  
   
   ##### conclusion ####
   
@@ -199,17 +245,7 @@ print(list$diagnostics$VIF_critical_terms)
   add(list$reporting$diagnostics$intro_DHARMa_text)
   new_line()
   new_line()
-  add(list$reporting$diagnostics$outlier_text)
-  new_line()
-  new_line()
-  add(list$reporting$diagnostics$dispersion_text)
-  new_line()
-  new_line()
-  add(list$reporting$diagnostics$uniformity_text)
-  new_line()
-  new_line()
-  add(list$reporting$diagnostics$quantiles_text)
-  new_line()
+  add('![table with results from DARMa-based model diagnostics.](../tables/model_diagnostics_table.png){width=100% fig-align="center"}')
   new_line()
   add('![DHARMa summary plot](../plots/DHARMa_summary_plot.png){width=100% fig-align="center"}')
   new_line()

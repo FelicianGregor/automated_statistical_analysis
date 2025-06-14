@@ -3,7 +3,8 @@ build_model = function(list, verbose = TRUE){
   library(VGAM)
   
   #build model
-  list$model = vglm(list$formula, family = list$dist, data = list$data_na.omit, model = FALSE) 
+  list$model = vglm(list$formula, family = list$dist, data = list$data_na.omit, model = F)
+  list$model_mf = vglm(list$formula, family = list$dist, data = list$data_na.omit, model = T) # in case one likes to use the model object (from output list) later for e.g. anova like table
   
   #store model summary: result
   list$model_summary = summary(list$model)
@@ -94,7 +95,7 @@ build_model = function(list, verbose = TRUE){
     explained_model <- fastshap::explain(list$model, feature_names = NULL,  X=x_data, pred_wrapper=pred_vglm, adjust=T, nsim=50, shap_only = FALSE) # shap_inly = TRUE --> just shap values returned
     
     # make a tibble out of the dataframe...
-    (tibble::as_tibble(explained_model$shapley_values))
+    tibble::as_tibble(explained_model$shapley_values)
     
     #visualize:
     #make a shapviz object out of the fastshap for using it in the visualizations

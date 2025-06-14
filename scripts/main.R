@@ -1,98 +1,45 @@
-#### build system skeleton ####
-# but with functions - replace every major step with a function....
+### main script to call the other scripts and test the system ###
 
-# packages used
-# DHARMa
-# stringr: for removing a pattern from a string to report distribution (reporting.R)
-# quarto
-# VGAM -> system is based on the vglm() function
-# for test data sets: lterdatasampler
+# prepare everything to run the analyse()-function
+# install / load packages used by AS
+source("./scripts/helper_functions.R")
+install_packages_AS() # installs packages needed in AS in cases not yet installed, and loads them
+
+# create folder structure for outputs
+create_folder()
+
+# get analyse function 
+source("./scripts/analyse.R")
+
+### 1. t-test example ####
+# normally distributed data, group comparison, linear
+
+north <- c(12, 23, 15, 18, 20)
+south <- c(5, 8, 7, 9, 9)
+t.test(north, south, var.equal=F)
+
+# using the AS:
+# change the format of the data to a data.frame:
+data_north = data.frame(num_species = north, direction = rep(factor("north"), length(north)))
+data_south = data.frame(num_species = south, direction = rep(factor("south"), length(south)))
+mosses = rbind(data_north, data_south)
+
+# analyse with the AS
+test1 = analyse(formula = num_species ~ direction, data = mosses, mode = "test", dist = uninormal(), verbose = T)
+# another data format necessary
+# more explicit assumption of distribution (normal)
+# less explicit: assumption on variance is less explicit and no chance to conduct welch unequal variance test in the GLM framework, since they estimate only the mean (but mixed effects model would be needed?)
+# gives another type of information: are they equal or not, but does not (directly) give the exact estimate for every value (just graphically, however, could easily be translated into a table using predict() and then every combination, as done already)
+# no proper units labeling the axis!!
+
+# compare CI
+moss_model = vglm(formula = num_species ~ direction, data = mosses, family = uninormal())
+summary(moss_model) # does not give means
+predict(moss_model, newdata = data.frame(direction = "north")) # makes also clear that the variances are assumed to be equal
+predict(moss_model, newdata = data.frame(direction = "south"))
 
 
-system_function = function(formula, data, mode, dist = "uninormal", verbose = TRUE){
 
-  # create a folder structure for saving the results, if not existing:
-  if (dir.exists("./automated_statistical_analysis")){
-    
-    #print message if directories are created
-    message("The Automated Statistician creates a folder structure for saving results in your working directory.")
-    
-    dir.create("./automated_statistical_analysis")
-    dir.create("./automated_statistical_analysis/output")
-    dir.create("./automated_statistical_analysis/output/plots")
-    dir.create("./automated_statistical_analysis/output/report")
-    dir.create("./automated_statistical_analysis/output/tables")
-  }
-  
-  #create the long storage list
-  #create the long storage list
-  list = list() # use the same list throughout the whole analysis?
-  
-  #devide the different modes
-  if (mode == "test"){
-    
-    #prepare data
-    source("./scripts/data_preparation.R")
-    list = prepare_data(formula, data, mode, list = list, dist = dist, verbose = TRUE)
-    
-    # build model
-    source("./scripts/model_fitting.R")
-    list = build_model(list, verbose = TRUE)
-    
-    #model diagnostics
-    source("./scripts/diagnostics.R")
-    list = diagnose(list, verbose = TRUE)
-    
-    #### plotting####
-    source("./scripts/plotting.R")
-    list = plotting(list, verbose = TRUE)
-    
-    # reporting
-    source("./scripts/reporting.R")
-    report(list, verbose = TRUE)
-
-  } else if (mode == "predict"){
-    
-    #prepare data
-    source("./scripts/data_preparation.R")
-    list = prepare_data(formula, data, mode, list = list, dist = dist, verbose = TRUE)
-    
-    # build model
-    source("./scripts/model_fitting.R")
-    list = build_model(list, verbose = TRUE)
-    
-    #model diagnostics
-    source("./scripts/diagnostics.R")
-    #list = diagnose(list, verbose = TRUE)
-    
-    #### plotting####
-    source("./scripts/plotting.R")
-    list = plotting(list, verbose = TRUE)
-    
-    # reporting
-    source("./scripts/reporting.R")
-    report(list, verbose = TRUE)
-    
-  } else if (mode == "explore"){
-    
-  } else {
-    cat("please specify a valid mode of either `test`, `predict` or `explore`")
-  }
-  
-  return(list)
-}
-
-#load required packages
-library(lterdatasampler)
-library(DHARMa)
-library(VGAM)
-library(ds4psy) # for is_wholenumber()
-library(polycor) # for hetcor() --> continuous, polychoric / polyserial correlations
-library(shapviz) # for shapley values (in script model_fitting)
-library(ggplot2) # for visualizing shapley values (script model_fitting)
-library(ggthemes) # for making shapley values pretty (script model_fitting)
-library(gt) # for making pretty tables
-library(tibble) # needed for gt tables
 
 # test the system on data
 data = knz_bison
@@ -101,7 +48,7 @@ knz_bison$animal_sex = as.factor(data$animal_sex)
 knz_bison$age = knz_bison$rec_year - knz_bison$animal_yob
 
 # run the system
-result = system_function(formula = animal_weight ~ animal_sex*poly(age, 4), data = knz_bison, mode = "test", dist = "uninormal")
+result = analyse(formula = animal_weight ~ animal_sex*poly(age, 4), data = knz_bison, mode = "test", dist = "uninormal")
 
 # two cat, one cont:
 data(mtcars)
@@ -109,7 +56,7 @@ mtcars$am = as.factor(mtcars$am)
 mtcars$vs = as.factor(mtcars$vs)
 mtcars$gear = as.factor(mtcars$gear)
 
-test = system_function(formula =  mpg~ hp*qsec, data = mtcars, mode = "test", dist = "poissonff")
+test = analyse(formula =  mpg~ hp*qsec, data = mtcars, mode = "test", dist = "poissonff")
 model = vglm(formula =  mpg~ hp*qsec, data = mtcars, family = "uninormal")
 model_p = vglm(formula =  mpg~ hp*qsec, data = mtcars, family = "poissonff")
 model.matrix(model_p)
@@ -132,7 +79,7 @@ summary(hbr_maples)
 # elevation: Low and Mid as levels 
 
 #test the function
-test1 = system_function(formula = stem_dry_mass ~ watershed * as.factor(year), data = hbr_maples, mode = "test", dist = uninormal())
+test1 = analyse(formula = stem_dry_mass ~ watershed * as.factor(year), data = hbr_maples, mode = "test", dist = uninormal())
 
 # another test:
 #install.packages("AER")
@@ -143,7 +90,7 @@ NMES1988$region = as.factor(NMES1988$region)
 NMES1988$health = as.factor(NMES1988$health)
 
 # run the analysis function
-test2 = system_function(visits ~ as.factor(gender) * poly(age, 2),
+test2 = analyse(visits ~ as.factor(gender) * poly(age, 2),
                         data = NMES1988, dist = "uninormal", mode = "test", verbose = T)
 #problems: for many data points, the points are lying on top of the predicted response with error bars so that one cannot see everything
 # might be specific to one cat and one cont in plotting
@@ -151,7 +98,7 @@ test2 = system_function(visits ~ as.factor(gender) * poly(age, 2),
 data("ntl_icecover")
 
 # run the analysis function
-test3 = system_function(ice_duration ~ year,
+test3 = analyse(ice_duration ~ year,
                         data = ntl_icecover, dist = "uninormal", mode = "test", verbose = T)
 # problem: looks good. just the plotting window quadratic!
 
@@ -159,14 +106,14 @@ test3 = system_function(ice_duration ~ year,
 data = mtcars
 
 # run the analysis function
-test4 = system_function(disp ~  poly(hp, 3) + as.factor(am) + as.factor(gear), data = mtcars, dist = "uninormal", mode = "test", verbose = T)
+test4 = analyse(disp ~  poly(hp, 3) + as.factor(am) + as.factor(gear), data = mtcars, dist = "uninormal", mode = "test", verbose = T)
 # looks ok!
 
 ##### another test, including poly()
 ozone # ozone dataset
 
-test4.1 = system_function(O3 ~ (poly(temp, 4) + poly(wind, 4) + poly(humidity, 4) + poly(vis, 3))^3, data = ozone, dist = "uninormal", mode = "test", verbose = T)
-test4.2 = system_function(O3 ~ temp * wind * humidity, data = ozone, dist = "uninormal", mode = "test", verbose = T)
+test4.1 = analyse(O3 ~ (poly(temp, 4) + poly(wind, 4) + poly(humidity, 4) + poly(vis, 3))^3, data = ozone, dist = "uninormal", mode = "test", verbose = T)
+test4.2 = analyse(O3 ~ temp * wind * humidity, data = ozone, dist = "uninormal", mode = "test", verbose = T)
 
 ##### test for including poly and categorical variables
 data = mtcars
@@ -174,8 +121,49 @@ data$gear = as.factor(mtcars$gear)
 data$am = as.factor(mtcars$am)
 data$cyl = as.factor(mtcars$cyl)
 
-test5 = system_function(disp ~ am + poly(as.factor(gear), 2) + cyl, data = data, dist = "uninormal", mode = "test", verbose = T)
+test5 = analyse(disp ~ am + poly(as.factor(gear), 2) + cyl, data = data, dist = "uninormal", mode = "test", verbose = T)
 # makes predictions also for NA values??
+
+
+### 2. simple regression ####
+head(trees) # data from Rdatasets, girth = diameter at breast hight
+
+# fit model, as done in book Dormann 2020, page 95
+fm2 <- glm(Volume ~ Girth, data=trees, family=gaussian)
+
+# using the analyse function from the AS:
+test2 = analyse(formula = Volume ~ Girth, data = trees, dist = "uninormal", mode = "test")
+# mainly reproduces the results 
+# legend with CI and estimate is missing (what are the dotted lines one may ask)
+
+### 3 poisson regression using flycatcher ####
+attract = read.delim("./data/flycatcher.txt", header = TRUE, sep = "")
+fm3 = glm(items ~ attract, data = attract, family = "poisson")
+
+# analyse with AS
+test3 = analyse(formula = items ~ poly(attract, 2), data = attract, dist = "poissonff", mode = "test")
+# there is not really an interpretation of the results in the book
+# however, we made the decision for plotting on the response scale, not the link scale emphazising different aspects 
+
+
+#### 4. multiple regression with normally distributed data & interaction ####
+cormorant = read.delim("./data/cormorant.txt", header = TRUE, sep = "", stringsAsFactors = T)
+fm4 = glm(divetime ~ season + subspecies, data = cormorant, family = "gaussian")
+anova(fm4)
+
+# use the analyse function from the AS:
+test4 = analyse(divetime ~ season + subspecies, data = cormorant, dist = "poissonff", mode = "test")
+# the plot is really different, AS produces boxplot, not facets
+# we don't really know whether the subspecies effect or season effect is significant - one could produce an anove like table out of this
+anova.vglm(test4$model_mf) # use the model object with model frame, using model = T as default can create odd behaviour during plotting, that is why we created a second model object that can get used for the anova table
+
+
+data("airquality")
+airquality
+
+model = vglm(Ozone ~ Solar.R * Temp, data = airquality, family = "poissonff")
+anova(model)
+summary(model)
 
 ##### test on three categorical vars ####
 # Load required library
@@ -217,7 +205,7 @@ df$response <- with(df,
                       rnorm(nrow(df), mean = 0, sd = 2))
 
 # test
-test4 = system_function(response ~ fac3*fac2*fac1, data = df, dist = "uninormal", mode = "test", verbose = T)
+test4 = analyse(response ~ fac3*fac2*fac1, data = df, dist = "uninormal", mode = "test", verbose = T)
 
 # test binomial data on passer montanus ####
 library(jSDM)
@@ -260,7 +248,7 @@ str(birds$forest_Q)
 head(birds)
 
 # vglm(cbind(succ, fail) ~ forest * elev, data = birds, family = "binomialff")
-test4 = system_function(succ ~ forest, data = birds, dist = "binomialff", mode = "test", verbose = T)
+test4 = analyse(succ ~ forest, data = birds, dist = "binomialff", mode = "test", verbose = T)
 model_binom = vglm(succ ~ forest, data = birds, family = "binomialff")
 model.matrix(model_binom)
 intercept_cols = which(grepl("Intercept", colnames(model.matrix(model_binom))))
@@ -270,7 +258,6 @@ mm = model.matrix(model_binom)
 as.data.frame(model.matrix(model_binom))[1]
 
 ###### to do ######
-# - 6 fix errors due to poly(x, 2) (error start with other data type...)
 # - 9 add more information on input data! => comprehensive data checking and report the findings
 # - 11 for small number of observation: add error bars using bootstrapping
 # - Mit options(warn=2) kann man R zwingen, alle Warnungen in Fehlermeldungen umzuwandeln, bei warn=-1 werden sie alle ignoriert: siehe ?options unter warn.
