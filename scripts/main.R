@@ -14,7 +14,7 @@ source("analyse.R")
 ### 1. t-test example ####
 # normally distributed data, group comparison, linear
 
-north <- c(12, 23, 15, 18, 20)
+north <- c(12, 23, 15, 18, 20, 100, 104)
 south <- c(5, 8, 7, 9, 9)
 t.test(north, south, var.equal=F)
 

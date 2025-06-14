@@ -124,10 +124,10 @@ print(list$diagnostics$VIF_critical_terms)
   print(test_type)
   
   # significance
-  critical = c(ifelse(list$diagn_DHARMa$outlier_test$p.value < 0.05, yes = "**!** ",no ="not critical"), 
-               ifelse(list$diagn_DHARMa$dispersion_test$p.value < 0.05, yes = "**!** ",no ="not critical"), 
-               ifelse(list$diagn_DHARMa$uniformity_test$p.value < 0.05, yes = "**!** ",no ="not critical"), 
-               ifelse(list$diagn_DHARMa$quantile_test$p.value < 0.05, yes = "**!** ", no ="not critical"))
+  critical = c(ifelse(list$diagn_DHARMa$outlier_test$p.value < 0.05, yes = "**!**",no ="not critical"), 
+               ifelse(list$diagn_DHARMa$dispersion_test$p.value < 0.05, yes = "**!**",no ="not critical"), 
+               ifelse(list$diagn_DHARMa$uniformity_test$p.value < 0.05, yes = "**!**",no ="not critical"), 
+               ifelse(list$diagn_DHARMa$quantile_test$p.value < 0.05, yes = "**!**", no ="not critical"))
   
   print(critical)
   
