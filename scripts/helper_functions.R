@@ -14,11 +14,11 @@ params:
 }
 add = function(text){
   "adds text to file called test_reporting.qmd, used in reporting script"
-  cat(text, file = "../output/reports/test_report.qmd", append = T)
+  cat(text, file = "../output/report/test_report.qmd", append = T)
 }
 new_line = function(){
-  'adds 2 new lines to "./output/reports/test_report.qmd", used in reporting script'
-  cat("\n", file = "../output/reports/test_report.qmd", append = T)
+  'adds 2 new lines to "./output/report/test_report.qmd", used in reporting script'
+  cat("\n", file = "../output/report/test_report.qmd", append = T)
 }
 
 install_packages_AS = function(){

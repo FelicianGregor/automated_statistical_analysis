@@ -158,13 +158,13 @@ print(list$diagnostics$VIF_critical_terms)
     cols_align(align = "center", columns = Result)
   
   # save to directory as a png file 
-  gtsave(test_table, "./output/tables/model_diagnostics_table.png")
+  gtsave(test_table, "../output/tables/model_diagnostics_table.png")
   
   
   ##### conclusion ####
   
   # save list to output! --> then load it in quarto and use it for printing:
-  saveRDS(list, "../output/reports/list_reporting.RDS")
+  saveRDS(list, "../output/report/list_reporting.RDS")
 
 
   ### create params list for R-like output in chunk (model summary, especially) - to get replaced by html table?
@@ -174,7 +174,7 @@ print(list$diagnostics$VIF_critical_terms)
   source("helper_functions.R") #load header() add() and new_line() function
   
   #write document step by step and render at the end
-  cat(header(), file = "../output/reports/test_report.qmd") # create .qmd document
+  cat(header(), file = "../output/report/test_report.qmd") # create .qmd document
   
   ### input para
   add("## input data")
@@ -251,7 +251,7 @@ print(list$diagnostics$VIF_critical_terms)
   new_line()
   
   #render
-  quarto::quarto_render("./output/reports/test_report.qmd", execute_params = params)
+  quarto::quarto_render("../output/report/test_report.qmd", execute_params = params)
   
   
   
