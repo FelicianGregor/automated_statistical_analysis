@@ -5,7 +5,7 @@ diagnose = function(list, verbose = TRUE){
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   cat("entered model diagnostics\n")
-  source("./scripts/helper_functions.R") #load function from other scripts
+  source("helper_functions.R") #load function from other scripts
   
   #check if integer response var or not, to set argument in createDHARMa
   #try <- try(birds[,responseName(fm)], silent = TRUE) # in case of an error, enters first if statement below and check for binomial data
@@ -52,7 +52,7 @@ diagnose = function(list, verbose = TRUE){
   if (verbose){cat("testQuantiles() finished\n")}
   
   # make plot on dharma object: creates QQ plot and quantile residuals plot, adding all the tests from above
-  png("./output/plots/DHARMa_summary_plot.png", width = 10, height = 5, units = "in", res = 400)
+  png("../output/plots/DHARMa_summary_plot.png", width = 10, height = 5, units = "in", res = 400)
   plot(list$diagn_DHARMa$sim)
   dev.off()
   if (verbose){cat("DHARMa plot saved\n")}
@@ -72,7 +72,7 @@ diagnose = function(list, verbose = TRUE){
   
   for (i in names(list$misc$pred_names_data_classes)) {
     # check if categorical or continuous predictor to use proper test function (testQuantile is somehow producing a plot with cat predictor, but no output, seems to be a bug)
-    png(paste0("./output/plots/quantile_plot_", i, ".png"), width = 5, height = 5, units = "in", res = 400)
+    png(paste0("../output/plots/quantile_plot_", i, ".png"), width = 5, height = 5, units = "in", res = 400)
     list$diagn_DHARMa$quantile_test_per_pred[[i]] <- if (list$misc$pred_names_data_classes[i] == "factor") {
       testCategorical(list$diagn_DHARMa$sim, catPred = list$data_na.omit_as_fac_included[[i]])
     } else {

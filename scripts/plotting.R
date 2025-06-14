@@ -31,7 +31,7 @@ plotting = function(list, verbose = T){
     par(mar = c(1,1,1,1))
     
     # produce plot with text that this cannot get displayed:
-    png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
+    png('../output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
     
     # draw plotting window
     plot(c(0, 10), c(0, 10), type = "n", ann = FALSE, bty = "o", xaxt = "n", yaxt = "n")
@@ -73,11 +73,11 @@ plotting = function(list, verbose = T){
     #set par depending on number of plots and rows needed
       if (plot_rows_needed == 1){
         #start the "recording" using png (before setting the par)
-        png('./output/plots/plot.png', width = 8, units = "in", height = 4, res = 300)
+        png('../output/plots/plot.png', width = 8, units = "in", height = 4, res = 300)
         par(mfrow = c(1,2))
       } else {
         #start recording with height depending on number of plots
-        png('./output/plots/plot.png', width = 8, units = "in", height = 4*plot_rows_needed, res = 300)
+        png('../output/plots/plot.png', width = 8, units = "in", height = 4*plot_rows_needed, res = 300)
         #adjust some par for more space efficient plotting when having more than one rows
         par(mfrow = c(plot_rows_needed, 2))
         par(mar = c(4.5, 4, 2, 2))
@@ -190,7 +190,7 @@ plotting = function(list, verbose = T){
     cont_pred_full = data_na.omit[[cont]]
     
     #start recording
-    png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
+    png('../output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
     
     #set par and expand margin on the right side for legend
     # enable writing in the margin
@@ -284,7 +284,7 @@ plotting = function(list, verbose = T){
     lower_CI = model@family@linkinv(preds$fitted.values - 1.96*preds$se.fit , extra = model@extra)
     
     #start recording
-    png('./output/plots/plot.png', width = 4, units = "in", height = 4, res = 300)
+    png('../output/plots/plot.png', width = 4, units = "in", height = 4, res = 300)
     
     #make the plot
     plot(x, y,
@@ -318,7 +318,7 @@ plotting = function(list, verbose = T){
     
     #save plots
     # since 3 quantiles are used: 3 rows
-    png('./output/plots/plot.png', width = 10, units = "in", height = 4*2, res = 300)
+    png('../output/plots/plot.png', width = 10, units = "in", height = 4*2, res = 300)
     par(mfrow = c(2, 2))
     
     for (i in 1:length(cont_quant_values)){
@@ -389,7 +389,7 @@ plotting = function(list, verbose = T){
               })
     
     #start saving
-    png('./output/plots/plot.png', width = 6, units = "in", height = 6, res = 300)
+    png('../output/plots/plot.png', width = 6, units = "in", height = 6, res = 300)
     
     #make plot
     image(cont_x_seq, cont_y_seq, z, cex.lab = 1.5,
@@ -433,7 +433,7 @@ plotting = function(list, verbose = T){
       rows_needed = 1 # set 1 nrwo to minim, otherwise an error occurs
     }
     
-    png('./output/plots/plot.png', width = 10, units = "in", height = 4*rows_needed, res = 300)
+    png('../output/plots/plot.png', width = 10, units = "in", height = 4*rows_needed, res = 300)
     par(mfrow = c(rows_needed, 2))
     for (i in 1:length(cat1_levels)){
       
@@ -495,7 +495,7 @@ plotting = function(list, verbose = T){
       rows_needed = 1 # set 1 nrwo to minim, otherwise an error occurs
     }
     
-    png('./output/plots/plot.png', width = 10, units = "in", height = 4 * rows_needed, res = 300)
+    png('../output/plots/plot.png', width = 10, units = "in", height = 4 * rows_needed, res = 300)
     par(mfrow = c(rows_needed, 2))
     
     for (level_fac3 in levels_fac3) {
@@ -622,7 +622,7 @@ plotting = function(list, verbose = T){
     # order boxplot by interaction
     ordered_groups <- levels(interaction(data_na.omit[[fac1]], data_na.omit[[fac2]], sep = "_"))
     
-    png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
+    png('../output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
     par(mar = c(5, 4, 4, 8), xpd = TRUE)
     
     boxplot(data_na.omit[[responseName(model)]] ~ data_na.omit$interaction_group, col = rep(colors, times = length(levels_fac1)), 
@@ -686,7 +686,7 @@ plotting = function(list, verbose = T){
     colors = rainbow(length(levels_fac1))
     
     #start plotting and recording
-    png('./output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
+    png('../output/plots/plot.png', width = 6, units = "in", height = 4, res = 300)
     par(mar = c(5, 4, 4, 8), xpd = TRUE)  # Expand right margin
     boxplot(formula.vlm(model), data = data_na.omit, col = colors, 
             xlab = fac1, las = 1, 

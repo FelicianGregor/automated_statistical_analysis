@@ -60,7 +60,7 @@ build_model = function(list, verbose = TRUE){
     )
   
   # save to directory as a png file 
-  gtsave(res, "./output/tables/model_results_table.png")
+  gtsave(res, "../output/tables/model_results_table.png")
   
   if (verbose){
     cat("model fitted!\n")
@@ -107,7 +107,7 @@ build_model = function(list, verbose = TRUE){
   
     # ordered barplot:
     shapley_barplot = sv_importance(shv.global, kind = "bar", show_numbers = T) + ggtitle(label = "mean absolute shapley values") + theme_minimal()
-    ggsave(filename = "shapley_values_barplot.png", plot = shapley_barplot, path = './output/plots/',
+    ggsave(filename = "shapley_values_barplot.png", plot = shapley_barplot, path = '../output/plots/',
           scale = 1, width = 3.5, height = 3.5, units = "in",
           dpi = 300, limitsize = TRUE)
     

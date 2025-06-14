@@ -2,14 +2,14 @@
 
 # prepare everything to run the analyse()-function
 # install / load packages used by AS
-source("./scripts/helper_functions.R")
+source("helper_functions.R")
 install_packages_AS() # installs packages needed in AS in cases not yet installed, and loads them
 
 # create folder structure for outputs
 create_folder()
 
 # get analyse function 
-source("./scripts/analyse.R")
+source("analyse.R")
 
 ### 1. t-test example ####
 # normally distributed data, group comparison, linear

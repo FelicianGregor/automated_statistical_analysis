@@ -19,7 +19,7 @@ prepare_data = function(formula, data, mode, list = list, dist, verbose = TRUE){
   list$data_na.omitted_number_text = paste(list$data_na.omitted_number, "NA's omitted\n")
   
   # produce correlation plot for input data
-  png('./output/plots/corr_plot.png', width = 6, units = "in", height = 6, res = 300) # start recording
+  png('../output/plots/corr_plot.png', width = 6, units = "in", height = 6, res = 300) # start recording
   
   psych::pairs.panels(list$data_na.omit, method = "pearson") 
   

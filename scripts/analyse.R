@@ -9,45 +9,45 @@ analyse = function(formula, data, mode = "test", dist = "uninormal", verbose = T
   if (mode == "test"){
     
     #prepare data
-    source("./scripts/data_preparation.R")
+    source("data_preparation.R")
     list = prepare_data(formula, data, mode, list = list, dist = dist, verbose = TRUE)
     
     # build model
-    source("./scripts/model_fitting.R")
+    source("model_fitting.R")
     list = build_model(list, verbose = TRUE)
     
     #model diagnostics
-    source("./scripts/diagnostics.R")
+    source("diagnostics.R")
     list = diagnose(list, verbose = TRUE)
     
     #### plotting####
-    source("./scripts/plotting.R")
+    source("plotting.R")
     list = plotting(list, verbose = TRUE)
     
     # reporting
-    source("./scripts/reporting.R")
+    source("reporting.R")
     report(list, verbose = TRUE)
     
   } else if (mode == "predict"){
     
     #prepare data
-    source("./scripts/data_preparation.R")
+    source("data_preparation.R")
     list = prepare_data(formula, data, mode, list = list, dist = dist, verbose = TRUE)
     
     # build model
-    source("./scripts/model_fitting.R")
+    source("model_fitting.R")
     list = build_model(list, verbose = TRUE)
     
     #model diagnostics
-    source("./scripts/diagnostics.R")
+    source("diagnostics.R")
     #list = diagnose(list, verbose = TRUE)
     
     #### plotting####
-    source("./scripts/plotting.R")
+    source("plotting.R")
     list = plotting(list, verbose = TRUE)
     
     # reporting
-    source("./scripts/reporting.R")
+    source("reporting.R")
     report(list, verbose = TRUE)
     
   } else if (mode == "explore"){

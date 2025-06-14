@@ -14,11 +14,11 @@ params:
 }
 add = function(text){
   "adds text to file called test_reporting.qmd, used in reporting script"
-  cat(text, file = "./output/reports/test_report.qmd", append = T)
+  cat(text, file = "../output/reports/test_report.qmd", append = T)
 }
 new_line = function(){
   'adds 2 new lines to "./output/reports/test_report.qmd", used in reporting script'
-  cat("\n", file = "./output/reports/test_report.qmd", append = T)
+  cat("\n", file = "../output/reports/test_report.qmd", append = T)
 }
 
 install_packages_AS = function(){
@@ -35,27 +35,25 @@ install_packages_AS = function(){
                          "stringr") # for str_remove_all function
   
   # Install packages not yet installed
-  installed_packages = packages %in% rownames(installed.packages())
-  if (any(installed_packages == FALSE)) {install.packages(packages[!installed_packages])}
+  installed_packages = packages_needed_AS %in% rownames(installed.packages())
+  if (any(installed_packages == FALSE)) {install.packages(packages_needed_AS[!installed_packages])}
   
   # Packages loading
-  invisible(lapply(packages, library, character.only = TRUE)) # invisible to suppress output in console
+  invisible(lapply(packages_needed_AS, library, character.only = TRUE)) # invisible to suppress output in console
 }
 
 create_folder = function(){
   # create a folder structure for saving the results, if not existing:
-  if (dir.exists("./automated_statistical_analysis")){
-  
+  if (dir.exists("../../automated_statistical_analysis")){
+    
     #print message if directories are created
     message("The Automated Statistician creates a folder structure for saving results in your working directory.")
-  
-    dir.create("./automated_statistical_analysis/output")
-    dir.create("./automated_statistical_analysis/output/plots")
-    dir.create("./automated_statistical_analysis/output/report")
-    dir.create("./automated_statistical_analysis/output/tables")
+    
+    dir.create("../output")
+    dir.create("../output/plots")
+    dir.create("../output/report")
+    dir.create("../output/tables")
   } else{
-  warning("Your directory is not named correctly.\nPlease name it './automated_statistical_analysis'.")
+    warning("Your directory is not named correctly.\nPlease name it 'automated_statistical_analysis'.")
   }
 }
-
-

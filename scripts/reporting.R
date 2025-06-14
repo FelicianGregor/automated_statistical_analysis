@@ -2,7 +2,7 @@ report = function(list, verbose = T){
   if (verbose){cat("entered reporting\n")}
   
   library(stringr) # for removing pattern ("\n\n") from family character
-  source("./scripts/helper_functions.R") #load header() add() and new_line() function
+  source("helper_functions.R") #load header() add() and new_line() function
   #create reporting part in list:
   list$reporting = list()
   
@@ -164,17 +164,17 @@ print(list$diagnostics$VIF_critical_terms)
   ##### conclusion ####
   
   # save list to output! --> then load it in quarto and use it for printing:
-  saveRDS(list, "output/reports/list_reporting.RDS")
+  saveRDS(list, "../output/reports/list_reporting.RDS")
 
 
   ### create params list for R-like output in chunk (model summary, especially) - to get replaced by html table?
   params = list()
   params$significance_output = list$reporting$model_results$significance_output
   ### dynamically write text:
-  source("./scripts/helper_functions.R") #load header() add() and new_line() function
+  source("helper_functions.R") #load header() add() and new_line() function
   
   #write document step by step and render at the end
-  cat(header(), file = "./output/reports/test_report.qmd") # create .qmd document
+  cat(header(), file = "../output/reports/test_report.qmd") # create .qmd document
   
   ### input para
   add("## input data")
