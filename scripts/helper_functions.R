@@ -44,16 +44,18 @@ install_packages_AS = function(){
 
 create_folder = function(){
   # create a folder structure for saving the results, if not existing:
-  if (dir.exists("../../automated_statistical_analysis")){
-    
-    #print message if directories are created
-    message("The Automated Statistician creates a folder structure for saving results in your working directory.")
+  if (endsWith(getwd(), "scripts")){
     
     dir.create("../output")
     dir.create("../output/plots")
     dir.create("../output/report")
     dir.create("../output/tables")
+    
+    #print message if directories are created
+    message("The Automated Statistician created a folder structure for saving results in your working directory.")
+    
   } else{
-    warning("Your directory is not named correctly.\nPlease name it 'automated_statistical_analysis'.")
+    warning(paste)("Your working directory must be the folder 'scripts',\n
+            but your current working directory is ", getwd(), ".")
   }
 }

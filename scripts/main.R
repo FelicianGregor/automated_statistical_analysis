@@ -1,6 +1,14 @@
 ### main script to call the other scripts and test the system ###
 
 # prepare everything to run the analyse()-function
+
+# check for right working directory:
+if(endsWith(getwd(), "scripts")){
+  cat("Great, your working directory is set correctly!")
+} else{
+  warning(paste)("Attention! Your working directory must be the folder 'scripts',\n
+            but your current working directory is ", getwd(), ".")}
+
 # install / load packages used by AS
 source("helper_functions.R")
 install_packages_AS() # installs packages needed in AS in cases not yet installed, and loads them
@@ -14,7 +22,7 @@ source("analyse.R")
 ### 1. t-test example ####
 # normally distributed data, group comparison, linear
 
-north <- c(12, 23, 15, 18, 20, 100, 104)
+north <- c(12, 23, 15, 18, 20)
 south <- c(5, 8, 7, 9, 9)
 t.test(north, south, var.equal=F)
 
