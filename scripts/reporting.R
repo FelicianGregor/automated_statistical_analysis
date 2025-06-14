@@ -79,8 +79,7 @@ print(list$diagnostics$VIF_critical_terms)
   
   ##### model result ####
   list$reporting$model_results$intro = "In the table you find the parameter estimates or slopes of the GLM along with the upper and lower 95% confidence intervals (CI's) on the link scale with their significance denoted by an asterisk."
-  list$reporting$model_results$significance_output = "![Table containing parameter estimates, their 95% confidence intervals and respective significance.](../tables/model_results_table.png){width=70% fig-align='center'}"
-  
+  list$reporting$model_results$significance_output = "{{< include ../tables/model_results_table.html >}}"
   list$reporting$model_results$model_significance_explanation = "The null hypothesis (H0) that the slope is zero is tested and P values < 0.05 (Bonferroni corrected) are considered significant. Note, that every estimated model parameter is here defined as one hypothesis. In case of a significant parameter estimate, the associated H0 is rejected concluding that the research hypothesis (H1) and the theory is supported by the given data. In case of a non significant parameter estimate, H0 cannot be rejected but is retained and we conclude that there is no support for either H1 and the theory or H0."
   
   num_preds = length(rownames(list$model_summary@coef3)[-grep("Intercept", rownames(list$model_summary@coef3))]) #exclude intercepts
@@ -121,23 +120,18 @@ print(list$diagnostics$VIF_critical_terms)
                 "DHARMa::testQuantiles", 
                 "DHARMa::testUniformity")
   
-  print(test_type)
-  
   # significance
   critical = c(ifelse(list$diagn_DHARMa$outlier_test$p.value < 0.05, yes = "**!**",no ="not critical"), 
                ifelse(list$diagn_DHARMa$dispersion_test$p.value < 0.05, yes = "**!**",no ="not critical"), 
                ifelse(list$diagn_DHARMa$uniformity_test$p.value < 0.05, yes = "**!**",no ="not critical"), 
                ifelse(list$diagn_DHARMa$quantile_test$p.value < 0.05, yes = "**!**", no ="not critical"))
   
-  print(critical)
   
   # text
   interpretation_text = c(list$reporting$diagnostics$outlier_text, 
                           list$reporting$diagnostics$dispersion_text, 
                           list$reporting$diagnostics$uniformity_text, 
                           list$reporting$diagnostics$quantiles_text)
-  
-  print(interpretation_text)
   
   # compile
   test_table = data.frame("Test" = test_type, 
@@ -158,7 +152,10 @@ print(list$diagnostics$VIF_critical_terms)
     cols_align(align = "center", columns = Result)
   
   # save to directory as a png file 
-  gtsave(test_table, "../output/tables/model_diagnostics_table.png")
+  gtsave(test_table, "../output/tables/model_diagnostics_table.html")
+  # remove annoying string at the beginning that shows up in quarto docs:
+  remove_html("../output/tables/model_diagnostics_table.html")
+    
   
   
   ##### conclusion ####
@@ -245,7 +242,8 @@ print(list$diagnostics$VIF_critical_terms)
   add(list$reporting$diagnostics$intro_DHARMa_text)
   new_line()
   new_line()
-  add('![table with results from DARMa-based model diagnostics.](../tables/model_diagnostics_table.png){width=100% fig-align="center"}')
+  add("{{< include ../tables/model_diagnostics_table.html >}}")
+  new_line()
   new_line()
   add('![DHARMa summary plot](../plots/DHARMa_summary_plot.png){width=100% fig-align="center"}')
   new_line()

@@ -60,7 +60,10 @@ build_model = function(list, verbose = TRUE){
     )
   
   # save to directory as a png file 
-  gtsave(res, "../output/tables/model_results_table.png")
+  gtsave(res, "../output/tables/model_results_table.html")
+  # remove annoying beginning of .html string that sowed up in rendered quarto document
+  source("helper_functions.R")
+  remove_html("../output/tables/model_results_table.html")
   
   if (verbose){
     cat("model fitted!\n")

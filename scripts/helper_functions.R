@@ -32,7 +32,8 @@ install_packages_AS = function(){
                          "ggthemes",  # for theme_minimal in visualization of shapley values
                          "gt", # for nicely formatted tables for report
                          "tibble",  # needed for gt tables
-                         "stringr") # for str_remove_all function
+                         "stringr", # for str_remove_all function
+                         "quarto") # to write and render the report as quarto document and html file 
   
   # Install packages not yet installed
   installed_packages = packages_needed_AS %in% rownames(installed.packages())
@@ -58,4 +59,12 @@ create_folder = function(){
     warning(paste)("Your working directory must be the folder 'scripts',\n
             but your current working directory is ", getwd(), ".")
   }
+}
+remove_html = function(file_name){
+  "takes .html file as input and removes the start of the document that would look ugly in rendered quarto document.
+  Unfortunately, the use of .html files in quarto directly makes troubles rendering it as PDF later"
+  html_string <- readLines(file_name)
+  # Remove lines containing <html>, <head>, etc.
+  html_doc_type_removed <- html_string[!grepl("<!DOCTYPE html>", html_string)]
+  writeLines(html_doc_type_removed, file_name)
 }
