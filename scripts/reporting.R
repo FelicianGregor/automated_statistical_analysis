@@ -158,7 +158,24 @@ print(list$diagnostics$VIF_critical_terms)
     
   
   
-  ##### conclusion ####
+  ##### miscellaneous ####
+  
+  packages_needed <- paste("```",
+    "DHARMa",
+    "lterdatasampler",
+    "VGAM",
+    "ds4psy",
+    "polycor",
+    "shapviz",
+    "ggplot2",
+    "ggthemes",
+    "gt",
+    "tibble",
+    "stringr",
+    "quarto",
+    "```", sep = "\n")
+    
+  text_packages = "During the analysis the following packages were used in their latest version, along with their dependencies: "
   
   # save list to output! --> then load it in quarto and use it for printing:
   saveRDS(list, "../output/report/list_reporting.RDS")
@@ -247,6 +264,16 @@ print(list$diagnostics$VIF_critical_terms)
   new_line()
   add('![DHARMa summary plot](../plots/DHARMa_summary_plot.png){width=100% fig-align="center"}')
   new_line()
+  new_line()
+  add("## miscellaneous")
+  new_line()
+  new_line()
+  add(paste0("This report was generated using the " , R.Version()$version.string, "."))
+  new_line()
+  new_line()
+  add(text_packages)
+  new_line()
+  add(packages_needed)
   
   #render
   quarto::quarto_render("../output/report/test_report.qmd", execute_params = params)

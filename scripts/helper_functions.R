@@ -4,7 +4,7 @@ header = function(){
   header_text = '---
 format: html
 editor: visual
-title: "report automated statistical analysis"
+title: "report automated hypothesis test"
 warning: false
 params:
   model_results_output: "summary cat failed"
