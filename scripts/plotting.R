@@ -51,7 +51,7 @@ plotting = function(list, verbose = T){
   ### if statements cont & cat facet plots####
   if (length(factors) == 2 & length(cont)== 1){
     # make scatter plot for cont pred & cont response, color  = pred cat1, factet for cat2
-    
+    print("enetered right if statement")
     #get the variables
     fac1 = factors[1]
     fac2 = factors[2]
@@ -101,16 +101,38 @@ plotting = function(list, verbose = T){
            xlab = cont, ylab = responseName(model), 
            xlim = x_lim_range, ylim = y_lim_range, 
            main = paste0("model predictions with ",fac2, ": ",  level_plot), 
-           pch = 1, las = 1, asp = 1)
+           pch = 1, las = 1)
       
       grid(col = "lightgrey") # add grid
       
       #add legend and create colors wit length of number of levels
       colors <- rainbow(length(levels_col_vec))
-      legend("topleft", legend = levels_col_vec, col = colors, 
+      legend("topleft", legend = levels_col_vec, col = darken(colors, amount = 0.2), 
              pch = rep(1, 2), lty = rep(1, 2), 
              title = fac1, 
-             cex = 0.7)
+             cex = 1)
+      
+      # add points first, then the prediction lines:
+      counter = 0
+      for (level in levels_col_vec){
+        counter = counter + 1
+        new_data <- data.frame(
+          dummy_cont = cont_new,
+          dummy_fac1 = level,
+          dummy_fac2 = level_plot)
+      
+        
+        
+        #set names according to variable cat predictor name
+        names(new_data) = c(cont, fac1, fac2)
+        
+        #just subset of data for cat preds
+        cat_predictor_treat = cont_pred_full[which(data_na.omit[[fac2]]==level_plot & data_na.omit[[fac1]]==level)]
+        cat_response_treat = response_full[which(data_na.omit[[fac2]]==level_plot & data_na.omit[[fac1]]==level)]
+        
+        # add the data points
+        points(cat_predictor_treat, cat_response_treat, pch = 1, las = 1, col = colors[counter], cex = 0.7)
+      }
       
       #set counter for colors
       counter = 0
@@ -157,9 +179,9 @@ plotting = function(list, verbose = T){
         
         
         #add lines
-        lines(cont_new_range, fit_range, lwd = 2, col = colors[counter])
-        lines(cont_new_range, upper_CI_range, lwd = 0.7, lty = 2, col = colors[counter])
-        lines(cont_new_range, lower_CI_range, lwd = 0.7, lty = 2, col = colors[counter])
+        lines(cont_new_range, fit_range, lwd = 2, col = darken(colors[counter], amount = 0.2))
+        lines(cont_new_range, upper_CI_range, lwd = 0.7, lty = 2, col = darken(colors[counter], amount = 0.2))
+        lines(cont_new_range, lower_CI_range, lwd = 0.7, lty = 2, col = darken(colors[counter], amount = 0.2))
       }
     }
     #stop reporting
@@ -203,18 +225,39 @@ plotting = function(list, verbose = T){
          xlab = cont, ylab = responseName(model), 
          xlim = x_lim_range, ylim = y_lim_range, 
          main = paste0("model predictions depending on ", cont, " & ", fac1), 
-         pch = 16, las = 1)
+         pch = 1, las = 1)
     
     #add legend and create colors wit length of number of levels
     colors <- rainbow(length(levels_col_vec))
-    legend("right", legend = levels_col_vec, col = colors, 
-           pch = rep(16, 2), lty = rep(1, 2), 
+    legend("right", legend = levels_col_vec, col = darken(colors, amount = 0.2), 
+           pch = rep(1, 2), lty = rep(1, 2), 
            title = fac1, 
            inset = c(-0.3, 0), bty = "n")
     
     par(xpd = FALSE) # set expand back to default FALSE, so that drawing in margins is disabled
     
     grid(col = "lightgrey") # add grid 
+    
+    # add the points first
+    counter = 0
+    for (level in levels_col_vec){
+      counter = counter + 1
+      new_data <- data.frame(
+        dummy_cont = cont_new,
+        dummy_fac1 = level)
+      
+      #set names according to variable cat predictor name
+      names(new_data) = c(cont, fac1)
+    
+      #just subset of data for cat preds
+      cat_predictor_treat = cont_pred_full[data_na.omit[[fac1]]==level]
+      cat_response_treat = response_full[data_na.omit[[fac1]]==level]
+    
+    
+      # add the data points
+      points(cat_predictor_treat, cat_response_treat, pch = 1, las = 1, col = colors[counter])
+      
+    }
     
     #set counter for colors
     counter = 0
@@ -243,7 +286,7 @@ plotting = function(list, verbose = T){
       
       
       # add the data points
-      points(cat_predictor_treat, cat_response_treat, pch = 16, las = 1, col = colors[counter])
+      #points(cat_predictor_treat, cat_response_treat, pch = 16, las = 1, col = colors[counter])
       
       # make cont_new to same range as points.
       val = which(cont_new >= min(cat_predictor_treat) & cont_new <= max(cat_predictor_treat))
@@ -256,9 +299,9 @@ plotting = function(list, verbose = T){
       
 
       #add lines
-      lines(cont_new_range, fit_range, lwd = 2, col = colors[counter])
-      lines(cont_new_range, upper_CI_range, lwd = 0.7, lty = 2, col = colors[counter])
-      lines(cont_new_range, lower_CI_range, lwd = 0.7, lty = 2, col = colors[counter])
+      lines(cont_new_range, fit_range, lwd = 2, col = darken(colors[counter], amount = 0.2))
+      lines(cont_new_range, upper_CI_range, lwd = 0.7, lty = 2, col = darken(colors[counter], amount = 0.2))
+      lines(cont_new_range, lower_CI_range, lwd = 0.7, lty = 2, col = darken(colors[counter], amount = 0.2))
     }
     # stop plot recording
     dev.off()

@@ -25,6 +25,13 @@ prepare_data = function(formula, data, mode, list = list, dist, verbose = TRUE){
   
   dev.off() # end recording of graph
   
+  # check for right data format: specifying factors in the formula might work, but is unstable. Therefore, ask to specify the data type outside the analyse() function
+  formula_character = as.character(formula)
+  
+  if (any(grepl("as.", formula_character) == TRUE)){
+    stop("\nYour formula contains 'as.' (such as as.factor) indicating that you change the data class in the formula of 'analyse'.\nThis causes unstable behaviour of the plotting module.\nPlease change the data class outside the 'analyse' - function." )
+  }
+  
   # number of data points per variable --> calculated in reporting script
   
   # skewness of data

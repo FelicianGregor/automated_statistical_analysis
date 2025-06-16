@@ -92,14 +92,16 @@ test1 = analyse(formula = stem_dry_mass ~ watershed * as.factor(year), data = hb
 # another test:
 #install.packages("AER")
 library(AER)
+install.packages("colorspace")
+library(colorspace)
 data("NMES1988")
 NMES1988$adl = as.factor(NMES1988$adl)
 NMES1988$region = as.factor(NMES1988$region)
 NMES1988$health = as.factor(NMES1988$health)
 
 # run the analysis function
-test2 = analyse(visits ~ as.factor(gender) * poly(age, 2),
-                        data = NMES1988, dist = "uninormal", mode = "test", verbose = T)
+test2 = analyse(visits ~ as.factor(gender) * poly(age, 2) * region,
+                        data = NMES1988, dist = "poissonff", mode = "test", verbose = T)
 #problems: for many data points, the points are lying on top of the predicted response with error bars so that one cannot see everything
 # might be specific to one cat and one cont in plotting
 ##### example test
@@ -112,10 +114,14 @@ test3 = analyse(ice_duration ~ year,
 
 ##### another example data set
 data = mtcars
+data$gear = as.factor(data$gear)
+data$am = as.factor(data$am)
 
 # run the analysis function
-test4 = analyse(disp ~  poly(hp, 3) + as.factor(am) + as.factor(gear), data = mtcars, dist = "uninormal", mode = "test", verbose = T)
+test4 = analyse(disp ~  poly(hp, 3) + as.factor(am) + gear, data = data, dist = "uninormal", mode = "test", verbose = T)
 # looks ok!
+
+str(mtcars)
 
 ##### another test, including poly()
 ozone # ozone dataset
