@@ -1,6 +1,4 @@
-build_model = function(list, verbose = TRUE){
-  
-  library(VGAM)
+build_model = function(list, verbose = TRUE, report_type){
   
   #build model
   list$model = vglm(list$formula, family = list$dist, data = list$data_na.omit, model = F)
@@ -59,11 +57,21 @@ build_model = function(list, verbose = TRUE){
       title = md("**model results**")
     )
   
-  # save to directory as a png file 
-  gtsave(res, "../output/tables/model_results_table.html")
-  # remove annoying beginning of .html string that sowed up in rendered quarto document
-  source("helper_functions.R")
-  remove_html("../output/tables/model_results_table.html")
+  # save table as png or html depending on desired report type
+  
+  if (report_type == "html") {
+    # save to directory as a html file 
+    gtsave(res, "../output/tables/model_results_table.html")
+    # remove annoying beginning of .html string that sowed up in rendered quarto document
+    source("helper_functions.R")
+    remove_html("../output/tables/model_results_table.html")
+  }
+  else if (report_type == "pdf"){
+    # save also to .png file for includng it in PDF documents, this does not work with html.
+    gtsave(res, "../output/tables/model_results_table.png")
+  }else{
+    stop("Please specify a valid 'report_type' as either 'html' or 'pdf'!")
+  }
   
   if (verbose){
     cat("model fitted!\n")
@@ -80,7 +88,7 @@ build_model = function(list, verbose = TRUE){
     
     #make data ready for computing shapley values
     x_data = list$data_na.omit[,c(vars)] # get origial variable names and data, rescale it
-    y_data = as.data.frame(scale(list$data_na.omit[, responseName(list$model)])) # get just y and scale it?
+    y_data = as.data.frame(list$data_na.omit[, responseName(list$model)]) # get just y 
     
     #prediction wrapper specifying how to obtain the predicted values from vglm objects
     # differentiate whether one or two variables are fitted and thus given back by the predict function of vglm. Explain needs just preds of mean
@@ -95,7 +103,7 @@ build_model = function(list, verbose = TRUE){
     }
     
     #compute values
-    explained_model <- fastshap::explain(list$model, feature_names = NULL,  X=x_data, pred_wrapper=pred_vglm, adjust=T, nsim=50, shap_only = FALSE) # shap_inly = TRUE --> just shap values returned
+    explained_model <- fastshap::explain(list$model, feature_names = NULL,  X=x_data, pred_wrapper=pred_vglm, adjust=T, nsim=50, shap_only = FALSE) # shap_only = TRUE --> just shap values returned
     
     # make a tibble out of the dataframe...
     tibble::as_tibble(explained_model$shapley_values)
@@ -130,9 +138,7 @@ build_model = function(list, verbose = TRUE){
       if (verbose){
         cat("just one predictor variable - no shapley values computed\n")
       }
-  }
-
-  
+    }
   }
   return(list)
 }

@@ -7,7 +7,7 @@ library(DiagrammeRsvg)
 
 #create a flowchart of the planned bachelor thesis project, depicting the main stages of the system
 
-### hypothesis testing:
+### hypothesis testing:####
 flowchart = grViz("
 digraph decision_tree {
   node [shape=box, style=filled, fillcolor=white]
@@ -72,7 +72,7 @@ webshot("./flowchart.html", file = "./flowchart.png", vwidth = 500, vheight = 10
 
 
 
-###### version with prediction loop:
+###### version with prediction loop:####
 flowchart = grViz("
 digraph decision_tree {
   node [shape=box, style=filled, fillcolor=white]
@@ -194,31 +194,235 @@ digraph decision_tree {
 }
 ")
 
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #####flowchart version for hypothesis testing####
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+##### Figure 1.2: general decision (first order) ####
+grViz("
+ digraph flowchart {
+   // rankdir=LR; // left right layout
+ 
+   node [shape=box, style=filled, fillcolor=white]
+ 
+   Step1     [label='explanatory\nmodeling']
+   Step2     [label='GLM']
+   Step3     [label='frequentist\nstatistics']
+   Step4     [label='hypothetico\ndeductive model']
+   Step5     [label='procedure of\nhypothesis testing']
+ }
+")
+
+##### Figure 1.2: flowchart for theorethical decisions (second order) #####
+library(DiagrammeR)
 
 grViz("
 digraph flowchart {
-  rankdir=TB; // Top-to-bottom layout
+  // rankdir=TB; // left right layout
 
   node [shape=box, style=filled, fillcolor=white]
 
-  Start     [label='input: ']
-  Step1     [label='Step 1: Collect Data']
-  Step2     [label='Step 2: Clean Data']
-  Step3     [label='Step 3: Analyze Data']
-  Decision  [label='Step 4: Model Accurate?', shape=box, fillcolor=lightgray]
-  End       [label='End']
+  Step1 [label='Data Preparation']
+  Step2 [label='Model Building']
+  
+  Step3 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'>Model Diagnostics</td></tr>
+      <tr><td align='left'><font point-size='8'>- influential data points (significant difference</font></td></tr>
+      <tr><td align='left'><font point-size='8'>  expected &amp; detected outlier number)</font></td></tr>
+    </table>
+  >]
+  
+  Step4 [label='Visualization']
+  Step5 [label='Reporting']
 
-  // Define connections
-  Start -> Step1
   Step1 -> Step2
   Step2 -> Step3
-  Step3 -> Decision
-  Decision -> Step1 [label='No', color=red]
-  Decision -> End [label='Yes', color=green]
+  Step3 -> Step4
+  Step4 -> Step5
+ }
+ ")
+
+
+
+
+##### Figure 1.2: flowchart implementation (third order)####
+library(DiagrammeR)
+
+grViz("
+digraph flowchart {
+  node [shape=box, style=filled, fillcolor=white]
+
+  Step1 [label=<
+    <font face='Courier'><b>prepare_data()</b></font>
+  >]
+
+  Step2 [label=<
+    <font face='Courier'><b>build_model()</b></font>
+  >]
+
+  Step3 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><font face='Courier'><b>diagnose()</b></font></td></tr>
+      <tr><td align='left'><font point-size='10'>- influential data points:</font></td></tr>
+      <tr><td align='left'><font point-size='10'><font face='Courier'><b>DHARMa::testOutliers()</b></font></font></td></tr>
+    </table>
+  >]
+
+  Step4 [label=<
+    <font face='Courier'><b>plotting()</b></font>
+  >]
+
+  Step5 [label=<
+    <font face='Courier'><b>report()</b></font>
+  >]
+
+  Step1 -> Step2
+  Step2 -> Step3
+  Step3 -> Step4
+  Step4 -> Step5
 }
 ")
+##### Figure 2.1: flowchart for theoretical decisions AS: 2nd order #####
+grViz("
+digraph flowchart {
+  rankdir=TB;
+
+  node [shape=box, style=filled, fillcolor=white]
+
+  Step1 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b>Data Preparation</b></td></tr>
+      <tr><td align='left'><font point-size='10'>- complete case analysis</font></td></tr>
+    </table>
+  >]
+
+  Step2 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b>Model Building &amp; Hypothesis Test</b></td></tr>
+      <tr><td align='left'><font point-size='10'>- fit GLM</font></td></tr>
+      <tr><td align='left'><font point-size='10'>- hypothesis test (2-sided Z-test) of GLM parameters</font></td></tr>
+      <tr><td align='left'><font point-size='10'>- Bonferroni correction</font></td></tr>
+      <tr><td align='left'><font point-size='10'>- Shapley values for global variable importance</font></td></tr>
+    </table>
+  >]
+
+  Step3 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b>Model Diagnostics</b></td></tr>
+      <tr><td align='left'><font point-size='10'>- influential data points (significant difference of expected &amp; detected number of outliers) </font></td></tr>
+      <tr><td align='left'><font point-size='10'>- dispersion (compare var of quantile residuals &amp; var of simulated observations)</font></td></tr>
+      <tr><td align='left'><font point-size='10'>- residuals (quantile regression: significant deviations from theoretical quantiles)</font></td></tr>
+      <tr><td align='left'><font point-size='10'>- collinearity (VIF &lt; 10, absolute correlation &lt; 0.7) </font></td></tr>
+      <tr><td align='left'><font point-size='10'>- observations per predictor (&lt; 10) </font></td></tr>
+    </table>
+  >]
+
+  Step4 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b>Visualization</b></td></tr>
+      <tr><td align='left'><font point-size='10'>box plot, scatter plot or contour plot with mean prediction &amp; 95% CI,</font></td></tr>
+      <tr><td align='left'><font point-size='10'>plot type depends on number of categorical a&amp; continuous predictors</font></td></tr>
+    </table>
+  >, fillcolor=white]
+
+  Step5 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b>Reporting</b></td></tr>
+      <tr><td align='left'><font point-size='10'>report structured by: input data,</font></td></tr>
+      <tr><td align='left'><font point-size='10'>results, model diagnostics, miscellaneous</font></td></tr>
+    </table>
+  >]
+
+  Step1 -> Step2
+  Step2 -> Step3
+  Step3 -> Step4
+  Step4 -> Step5
+  }
+  ")
+
+##### Figure 2.2: flowchart for implementation: 3rd order decisions ####
+grViz("
+digraph flowchart {
+  rankdir=TB;
+
+  node [shape=box, style=filled, fillcolor=white]
+
+  // Node definitions
+  Analyse [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b><font face='Courier'>analyse()</font></b></td></tr>
+    </table>
+  >]
+
+  Step1 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b><font face='Courier'>prepare_data()</font></b></td></tr>
+      <tr><td align='left'><font point-size='10'>- complete case analysis: <font face='Courier'>na.omit()</font></font></td></tr>
+    </table>
+  >]
+
+  Step2 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b><font face='Courier'>build_model()</font></b></td></tr>
+      <tr><td align='left'><font point-size='10'>- GLM with <font face='Courier'>VGAM::vglm()</font></font></td></tr>
+      <tr><td align='left'><font point-size='10'>- Z-test of GLM estimates: <font face='Courier'>VGAM::wald.stat()</font> (within <font face='Courier'>vglm()</font>)</font></td></tr>
+      <tr><td align='left'><font point-size='10'>- Bonferroni correction: manual, P value * num parameters GLM</font></td></tr>
+      <tr><td align='left'><font point-size='10'>- Shapley values: <font face='Courier'>fastshap::explain()</font></font></td></tr>
+    </table>
+  >]
+
+  Step3 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b><font face='Courier'>diagnose()</font></b></td></tr>
+      <tr><td align='left'><font point-size='10'>- influential observations: <font face='Courier'>DHARMa::testOutlier()</font></font></td></tr>
+      <tr><td align='left'><font point-size='10'>- dispersion: <font face='Courier'>DHARMa::testDispersion()</font></font></td></tr>
+      <tr><td align='left'><font point-size='10'>- residuals: <font face='Courier'>DHARMa::testQuantiles()</font></font></td></tr>
+      <tr><td align='left'><font point-size='10'>- VIF: manual 1/(1-R2), correlation: <font face='Courier'>polycor::hetcor()</font></font></td></tr>
+      <tr><td align='left'><font point-size='10'>- observations per predictor: manual</font></td></tr>
+    </table>
+  >]
+
+  Step4 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b><font face='Courier'>plotting()</font></b></td></tr>
+      <tr><td align='left'><font point-size='10'><font face='Courier'>boxplot()</font>, <font face='Courier'>plot()</font> or <font face='Courier'>contour()</font> with <font face='Courier'>image()</font> for heatmap</font></td></tr>
+    </table>
+  >]
+
+  Step5 [label=<
+    <table border='0' cellborder='0'>
+      <tr><td align='center'><b><font face='Courier'>report()</font></b></td></tr>
+      <tr><td align='left'><font point-size='10'>dynamically write quarto document, render as PDF or HTML file</font></td></tr>
+    </table>
+  >]
+
+  // Flow connections
+  Analyse -> Step1
+  Step1 -> Step2
+  Step2 -> Step3
+  Step3 -> Step4
+  Step4 -> Step5
+
+  // Force Analyse and Step1 to be on the same horizontal level
+  { rank = same; Analyse; Step1; }
+}
+")
+  
 
 
-#####flowchart version for prediction####
-#####flowchart version for data exploration####
+
+
+
+
+
+
+
+
+
+
+
+

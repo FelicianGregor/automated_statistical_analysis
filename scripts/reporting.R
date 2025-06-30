@@ -1,5 +1,5 @@
 report = function(list, verbose = T){
-  if (verbose){cat("entered reporting\n")}
+  if (verbose){cat("\nentered reporting\n")}
   
   library(stringr) # for removing pattern ("\n\n") from family character
   source("helper_functions.R") #load header() add() and new_line() function
@@ -173,6 +173,7 @@ print(list$diagnostics$VIF_critical_terms)
     "tibble",
     "stringr",
     "quarto",
+    "colorspace", 
     "```", sep = "\n")
     
   text_packages = "During the analysis the following packages were used in their latest version, along with their dependencies: "

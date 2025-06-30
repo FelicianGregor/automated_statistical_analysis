@@ -33,7 +33,8 @@ install_packages_AS = function(){
                          "gt", # for nicely formatted tables for report
                          "tibble",  # needed for gt tables
                          "stringr", # for str_remove_all function
-                         "quarto") # to write and render the report as quarto document and html file 
+                         "quarto", # to write and render the report as quarto document and html file
+                         "colorspace") # to darken colors 
   
   # Install packages not yet installed
   installed_packages = packages_needed_AS %in% rownames(installed.packages())

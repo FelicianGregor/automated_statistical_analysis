@@ -26,7 +26,7 @@ plotting = function(list, verbose = T){
   
   # what can't get displayed yet: if more than 3 vars
   if (vars_number>3){
-    cat("\nmodels with more than three variables as predictors can't get displayed by the AS!\n")
+    warning("\nmodels with more than three variables as predictors can't get displayed by the AS!\n")
     #make mar smaller
     par(mar = c(1,1,1,1))
     

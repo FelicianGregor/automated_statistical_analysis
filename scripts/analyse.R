@@ -1,6 +1,6 @@
 # wrapper function: analyse ###
 
-analyse = function(formula, data, mode = "test", dist = "uninormal", verbose = TRUE){
+analyse = function(formula, data, mode = "test", dist = "uninormal", verbose = TRUE, report_type = "html"){
   
   #create the long storage list
   list = list() # use the same list throughout the whole analysis to store output 
@@ -14,7 +14,7 @@ analyse = function(formula, data, mode = "test", dist = "uninormal", verbose = T
     
     # build model
     source("model_fitting.R")
-    list = build_model(list, verbose = TRUE)
+    list = build_model(list, verbose = TRUE, report_type)
     
     #model diagnostics
     source("diagnostics.R")
@@ -26,7 +26,7 @@ analyse = function(formula, data, mode = "test", dist = "uninormal", verbose = T
     
     # reporting
     source("reporting.R")
-    report(list, verbose = TRUE)
+    report(list, verbose = TRUE, report_type = report_type)
     
   } else if (mode == "predict"){
     
@@ -48,7 +48,7 @@ analyse = function(formula, data, mode = "test", dist = "uninormal", verbose = T
     
     # reporting
     source("reporting.R")
-    report(list, verbose = TRUE)
+    report(list, verbose = TRUE, report_type = report_type)
     
   } else if (mode == "explore"){
     
